@@ -8,13 +8,13 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install --production
+RUN npm install
 
 # Copy the rest of the application code
 COPY . .
 
-# Build the React app for production
-RUN npm run build
+# Build the React app for development
+RUN npm run build:dev
 
 # Install serve to serve the build directory
 RUN npm install -g serve
