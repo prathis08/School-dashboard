@@ -358,14 +358,14 @@ const Login = () => {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-8">
+        {/* <div className="text-center mt-8">
           <p className="text-sm text-gray-500">
             Don't have an account?{" "}
             <button className="text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200">
               Contact Administrator
             </button>
           </p>
-        </div>
+        </div> */}
       </div>
     </div>
   );
