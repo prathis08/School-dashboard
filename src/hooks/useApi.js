@@ -1,14 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken, removeAuthToken } from "../utils/cookies";
-
-const API_BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:50501/api";
+import { getApiBaseUrl } from "../utils/apiConfig";
 
 // Base API client function
 const apiClient = async (endpoint, options = {}) => {
   const url = endpoint.startsWith("http")
     ? endpoint
-    : `${API_BASE_URL}${endpoint}`;
+    : `${getApiBaseUrl()}${endpoint}`;
 
   // Get token from cookies
   const token = getAuthToken();

@@ -1,17 +1,14 @@
 import { getAuthToken, removeAuthToken } from "../utils/cookies";
 import { clearDashboardConfig } from "../utils/dashboardConfig";
+import { getApiBaseUrl } from "../utils/apiConfig";
 // API Endpoints (imported from api.js for backward compatibility)
 import { API_ENDPOINTS } from "./api";
-
-// API Base Configuration
-const API_BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:50501/api";
 
 // Enhanced API client for TanStack Query
 export const apiClient = async (endpoint, options = {}) => {
   const url = endpoint.startsWith("http")
     ? endpoint
-    : `${API_BASE_URL}${endpoint}`;
+    : `${getApiBaseUrl()}${endpoint}`;
 
   // Get token from cookies instead of localStorage
   const token = getAuthToken();

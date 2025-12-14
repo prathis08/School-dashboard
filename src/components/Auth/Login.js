@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, GraduationCap, Mail, Lock } from "lucide-react";
 import { useLogin } from "../../hooks/useApiHooks";
 import { API_ENDPOINTS } from "../../services/api";
+import { getApiBaseUrl } from "../../utils/apiConfig";
 import {
   setDashboardConfig,
   clearDashboardConfig,
@@ -32,12 +33,10 @@ const Login = () => {
   // Custom fetch function that doesn't auto-redirect on 401 for dashboard config
   const fetchDashboardConfig = async () => {
     const token = getAuthToken();
-    const API_BASE_URL =
-      process.env.REACT_APP_API_BASE_URL || "http://localhost:50501/api";
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}${API_ENDPOINTS.DASHBOARD.CONFIG}`,
+        `${getApiBaseUrl()}${API_ENDPOINTS.DASHBOARD.CONFIG}`,
         {
           method: "GET",
           headers: {
