@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from "react";
-import { Icons } from "../../utils/icons";
+import Icons from "../../utils/icons";
 import {
   useClasses,
   useCreateClass,

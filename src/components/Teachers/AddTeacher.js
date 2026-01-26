@@ -8,6 +8,7 @@ const AddTeacher = () => {
   const createTeacher = useCreateTeacher();
 
   const [formData, setFormData] = useState({
+    role: "teacher",
     firstName: "",
     lastName: "",
     email: "",
@@ -15,7 +16,6 @@ const AddTeacher = () => {
     qualification: "",
     experience: "",
     dateOfJoining: "",
-    salary: "",
     phone: "",
     address: "",
     subjects: [],
@@ -133,12 +133,6 @@ const AddTeacher = () => {
       newErrors.dateOfJoining = "Date of joining is required";
     }
 
-    if (!formData.salary) {
-      newErrors.salary = "Salary is required";
-    } else if (isNaN(formData.salary) || formData.salary <= 0) {
-      newErrors.salary = "Salary must be a valid positive number";
-    }
-
     if (!formData.phone.trim()) {
       newErrors.phone = "Phone number is required";
     } else if (!/^[+]?[\d\s\-()]{10,}$/.test(formData.phone)) {
@@ -167,7 +161,6 @@ const AddTeacher = () => {
       const teacherData = {
         ...formData,
         experience: parseInt(formData.experience),
-        salary: parseFloat(formData.salary),
       };
 
       // Create FormData if documents are uploaded
@@ -332,9 +325,6 @@ const AddTeacher = () => {
               {renderFormField("Qualification", "qualification")}
               {renderFormField("Experience (Years)", "experience", "number")}
               {renderFormField("Date of Joining", "dateOfJoining", "date")}
-              <div className="md:col-span-2">
-                {renderFormField("Salary", "salary", "number")}
-              </div>
             </div>
           </div>
 

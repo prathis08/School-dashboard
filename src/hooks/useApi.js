@@ -160,6 +160,7 @@ export const QUERY_KEYS = {
 
   // Students
   STUDENTS: "students",
+  STUDENTS_WITH_FEES: "studentsWithFees",
   STUDENT_DETAIL: "studentDetail",
   STUDENT_GRADES: "studentGrades",
   STUDENT_ATTENDANCE: "studentAttendance",
@@ -177,6 +178,8 @@ export const QUERY_KEYS = {
 
   // Fees
   FEE_STRUCTURES: "feeStructures",
+  FEE_TYPES: "feeTypes",
+  ACADEMIC_SESSIONS: "academicSessions",
   PAYMENT_HISTORY: "paymentHistory",
   FEE_REPORT: "feeReport",
 

@@ -186,11 +186,14 @@ export const feesApi = {
   getStructures: () => api.get("/fees/get-fee-structures"),
   updateStructure: (id, data) =>
     api.put(`/fees/update-fee-structure/${id}`, data),
-  deleteStructure: (id) => api.delete(`/fees/delete-fee-structure/${id}`),
+  deleteStructure: (feeStructureId) =>
+    api.delete(`/fees/delete-fee-structure/${feeStructureId}`),
   recordPayment: (data) => api.post("/fees/record-payment", data),
   getPaymentHistory: (studentId) =>
     api.get(`/fees/get-payment-history/${studentId}`),
   generateReport: () => api.get("/fees/generate-fee-report"),
+  getFeeTypes: () => api.get("/fees/fee-types"),
+  getAcademicSessions: () => api.get("/academic-sessions"),
 };
 
 // Features API functions
@@ -207,6 +210,40 @@ export const featuresApi = {
 // System API functions
 export const systemApi = {
   healthCheck: () => api.get("/health"),
+};
+
+// Add students with fees endpoint to existing studentsApi
+export const studentsWithFeesApi = {
+  getStudentsWithFees: (params = {}) => {
+    const queryParams = new URLSearchParams();
+
+    // Add query parameters if they exist and are not "All"
+    if (params.gradeId && params.gradeId !== "All") {
+      queryParams.append("gradeId", params.gradeId);
+    }
+    if (params.feeType && params.feeType !== "All") {
+      queryParams.append("feeType", params.feeType);
+    }
+    if (params.name && params.name.trim()) {
+      queryParams.append("name", params.name.trim());
+    }
+    if (params.section && params.section !== "All") {
+      queryParams.append("section", params.section);
+    }
+    if (params.status && params.status !== "All") {
+      queryParams.append("status", params.status);
+    }
+    if (params.academicSession && params.academicSession !== "All") {
+      queryParams.append("academicSession", params.academicSession);
+    }
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString
+      ? `/fees/get-students-with-fees?${queryString}`
+      : "/fees/get-students-with-fees";
+
+    return api.get(endpoint);
+  },
 };
 
 // Profile API functions

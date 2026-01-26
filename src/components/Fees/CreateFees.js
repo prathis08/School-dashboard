@@ -14,61 +14,82 @@ import {
   Eye,
   X,
 } from "lucide-react";
-import { useCreateFeeStructure } from "../../hooks/useApiHooks";
+import {
+  useCreateFeeStructure,
+  useFeeTypes,
+  useFeeStructures,
+  useGradesAndClasses,
+  useAcademicSessions,
+  useDeleteFeeStructure,
+} from "../../hooks/useApiHooks";
+import DeleteConfirmationModal from "../Common/DeleteConfirmationModal";
 
 const CreateFees = () => {
   // Use TanStack Query hooks
   const createFeeStructure = useCreateFeeStructure();
+  const deleteFeeStructure = useDeleteFeeStructure();
+  const {
+    data: feeTypesData,
+    isLoading: feeCategoriesLoading,
+    error: feeCategoriesError,
+  } = useFeeTypes();
 
-  const loading = createFeeStructure.isPending;
-  const error = createFeeStructure.error;
+  const {
+    data: feeStructuresData,
+    isLoading: feeStructuresLoading,
+    error: feeStructuresError,
+    refetch: refetchFeeStructures,
+  } = useFeeStructures();
 
-  const [feeStructures, setFeeStructures] = useState([]);
+  const {
+    data: gradesAndClassesData,
+    isLoading: classOptionsLoading,
+    error: classOptionsError,
+  } = useGradesAndClasses();
+
+  // const {
+  //   data: academicSessionsData,
+  //   isLoading: academicSessionsLoading,
+  //   error: academicSessionsError,
+  // } = useAcademicSessions();
+
+  const loading = createFeeStructure.isPending || feeStructuresLoading;
+  const error = createFeeStructure.error || feeStructuresError;
+
   const [filteredFeeStructures, setFilteredFeeStructures] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingFee, setEditingFee] = useState(null);
   const [selectedFee, setSelectedFee] = useState(null);
   const [showFeeDetails, setShowFeeDetails] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [feeToDelete, setFeeToDelete] = useState(null);
   const [formData, setFormData] = useState({
     title: "",
     amount: "",
     academicSession: "",
-    applicableClass: "",
+    applicableGrade: "",
     description: "",
     allowInstallments: false,
     availableForDiscount: false,
-    category: "Tuition",
+    feeType: "",
     dueDate: "",
     isActive: true,
   });
 
-  // Academic sessions and classes
-  const academicSessions = ["2024-2025", "2025-2026", "2026-2027"];
+  // Extract data from API responses
+  const feeCategories = feeTypesData?.data || [];
+  const feeStructures = feeStructuresData?.data || [];
 
-  const classOptions = [
-    "Grade 9",
-    "Grade 10",
-    "Grade 11",
-    "Grade 12",
-    "All Classes",
-  ];
+  // Debug: Log the grades and classes data structure
+  console.log("gradesAndClassesData:", gradesAndClassesData);
 
-  const feeCategories = [
-    "Tuition Fee",
-    "Library Fee",
-    "Lab Fee",
-    "Sports Fee",
-    "Transportation Fee",
-    "Examination Fee",
-    "Development Fee",
-    "Activity Fee",
-  ];
+  // Use grades instead of classes since fees apply to grades
+  const gradeOptions = gradesAndClassesData?.data?.grades || [];
 
-  // Fetch existing fee structures
-  useEffect(() => {
-    fetchFeeStructures();
-  }, []);
+  console.log("gradeOptions:", gradeOptions);
+
+  const academicSessions = ["2026-2027", "2027-2028"];
 
   // Filter fee structures based on search
   useEffect(() => {
@@ -79,71 +100,14 @@ const CreateFees = () => {
         (fee) =>
           fee.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           fee.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          fee.applicableClass
+          getGradeNameById(fee.applicableGrade)
             .toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
-          fee.academicSession.toLowerCase().includes(searchTerm.toLowerCase())
+          fee.academicSession.toLowerCase().includes(searchTerm.toLowerCase()),
       );
       setFilteredFeeStructures(filtered);
     }
   }, [searchTerm, feeStructures]);
-
-  const fetchFeeStructures = async () => {
-    try {
-      // This would be a real API call
-      // const response = await get("/fees/fee-structures");
-      // For now, using dummy data
-      const dummyFeeStructures = [
-        {
-          id: 1,
-          title: "Grade 12 Tuition Fee",
-          amount: 5000,
-          academicSession: "2024-2025",
-          applicableClass: "Grade 12",
-          category: "Tuition Fee",
-          description: "Annual tuition fee for Grade 12 students",
-          allowInstallments: true,
-          availableForDiscount: true,
-          dueDate: "2024-04-15",
-          isActive: true,
-          createdDate: "2024-01-15",
-        },
-        {
-          id: 2,
-          title: "Library Fee - All Classes",
-          amount: 200,
-          academicSession: "2024-2025",
-          applicableClass: "All Classes",
-          category: "Library Fee",
-          description: "Annual library usage and maintenance fee",
-          allowInstallments: false,
-          availableForDiscount: false,
-          dueDate: "2024-05-01",
-          isActive: true,
-          createdDate: "2024-01-10",
-        },
-        {
-          id: 3,
-          title: "Science Lab Fee",
-          amount: 800,
-          academicSession: "2024-2025",
-          applicableClass: "Grade 11",
-          category: "Lab Fee",
-          description: "Science laboratory equipment and chemicals fee",
-          allowInstallments: true,
-          availableForDiscount: true,
-          dueDate: "2024-04-30",
-          isActive: true,
-          createdDate: "2024-01-20",
-        },
-      ];
-      setFeeStructures(dummyFeeStructures);
-      setFilteredFeeStructures(dummyFeeStructures);
-    } catch (err) {
-      console.error("Error fetching fee structures:", err);
-    }
-  };
-
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -157,21 +121,16 @@ const CreateFees = () => {
 
     try {
       if (editingFee) {
-        // Update existing fee structure
-        const updatedFee = { ...editingFee, ...formData };
-        setFeeStructures((prev) =>
-          prev.map((fee) => (fee.id === editingFee.id ? updatedFee : fee))
-        );
+        // Update existing fee structure - you'll need to implement updateFeeStructure mutation
+        console.log("Update fee structure:", { ...editingFee, ...formData });
+        // await updateFeeStructure.mutateAsync({ id: editingFee.id, data: formData });
       } else {
         // Create new fee structure
-        const newFee = {
-          ...formData,
-          id: Date.now(),
-          createdDate: new Date().toISOString().split("T")[0],
-        };
-        setFeeStructures((prev) => [...prev, newFee]);
+        await createFeeStructure.mutateAsync({ data: formData });
       }
 
+      // Refresh the fee structures data
+      refetchFeeStructures();
       resetForm();
     } catch (err) {
       console.error("Error saving fee structure:", err);
@@ -183,11 +142,11 @@ const CreateFees = () => {
       title: "",
       amount: "",
       academicSession: "",
-      applicableClass: "",
+      applicableGrade: "",
       description: "",
       allowInstallments: false,
       availableForDiscount: false,
-      category: "Tuition",
+      feeType: "",
       dueDate: "",
       isActive: true,
     });
@@ -201,11 +160,11 @@ const CreateFees = () => {
       title: fee.title,
       amount: fee.amount,
       academicSession: fee.academicSession,
-      applicableClass: fee.applicableClass,
+      applicableGrade: fee.applicableGrade,
       description: fee.description,
       allowInstallments: fee.allowInstallments,
       availableForDiscount: fee.availableForDiscount,
-      category: fee.category,
+      feeType: fee.feeType,
       dueDate: fee.dueDate,
       isActive: fee.isActive,
     });
@@ -213,9 +172,32 @@ const CreateFees = () => {
   };
 
   const handleDelete = async (feeId) => {
-    if (window.confirm("Are you sure you want to delete this fee structure?")) {
-      setFeeStructures((prev) => prev.filter((fee) => fee.id !== feeId));
+    const fee = feeStructures.find((f) => f.id === feeId);
+    setFeeToDelete(fee);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (feeToDelete) {
+      try {
+        await deleteFeeStructure.mutateAsync({
+          feeStructureId: feeToDelete.feeStructureId,
+        });
+
+        // Refresh the fee structures data
+        refetchFeeStructures();
+      } catch (err) {
+        console.error("Error deleting fee structure:", err);
+      } finally {
+        setShowDeleteModal(false);
+        setFeeToDelete(null);
+      }
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setFeeToDelete(null);
   };
 
   const handleViewDetails = (fee) => {
@@ -239,6 +221,14 @@ const CreateFees = () => {
     });
   };
 
+  const getGradeNameById = (gradeId) => {
+    if (!gradeId || !gradeOptions.length) return gradeId;
+    const gradeOption = gradeOptions.find(
+      (option) => option.gradeId === gradeId,
+    );
+    return gradeOption ? gradeOption.grade : gradeId;
+  };
+
   const FeeStructureCard = ({ fee }) => (
     <div
       className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
@@ -260,7 +250,9 @@ const CreateFees = () => {
           <p className="text-2xl font-bold text-gray-900">
             {formatCurrency(fee.amount)}
           </p>
-          <p className="text-sm text-gray-600">{fee.applicableClass}</p>
+          <p className="text-sm text-gray-600">
+            Grade {getGradeNameById(fee.applicableGrade)}
+          </p>
         </div>
       </div>
 
@@ -409,25 +401,36 @@ const CreateFees = () => {
 
                 <div>
                   <label
-                    htmlFor="category"
+                    htmlFor="feeType"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
                     Fee Category *
                   </label>
-                  <select
-                    id="category"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    required
-                  >
-                    {feeCategories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
+                  {feeCategoriesLoading ? (
+                    <div className="text-gray-500 text-sm">
+                      Loading categories...
+                    </div>
+                  ) : feeCategoriesError ? (
+                    <div className="text-red-500 text-sm">
+                      Failed to load fee categories
+                    </div>
+                  ) : (
+                    <select
+                      id="feeType"
+                      name="feeType"
+                      value={formData.feeType}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      required
+                    >
+                      <option value="">Select Category</option>
+                      {feeCategories.map((cat) => (
+                        <option key={cat.key} value={cat.value}>
+                          {cat.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 <div>
@@ -456,26 +459,39 @@ const CreateFees = () => {
 
                 <div>
                   <label
-                    htmlFor="applicableClass"
+                    htmlFor="applicableGrade"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    Applicable Class *
+                    Applicable Grade *
                   </label>
-                  <select
-                    id="applicableClass"
-                    name="applicableClass"
-                    value={formData.applicableClass}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    required
-                  >
-                    <option value="">Select Class</option>
-                    {classOptions.map((classOption) => (
-                      <option key={classOption} value={classOption}>
-                        {classOption}
-                      </option>
-                    ))}
-                  </select>
+                  {classOptionsLoading ? (
+                    <div className="text-gray-500 text-sm">
+                      Loading grades...
+                    </div>
+                  ) : classOptionsError ? (
+                    <div className="text-red-500 text-sm">
+                      Failed to load grades
+                    </div>
+                  ) : (
+                    <select
+                      id="applicableGrade"
+                      name="applicableGrade"
+                      value={formData.applicableGrade}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      required
+                    >
+                      <option value="">Select Grade</option>
+                      {gradeOptions.map((gradeOption) => (
+                        <option
+                          key={gradeOption.gradeId}
+                          value={gradeOption.gradeId}
+                        >
+                          Grade {gradeOption.grade}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 <div>
@@ -692,10 +708,10 @@ const CreateFees = () => {
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-gray-500 mb-1">
-                        Applicable Class
+                        Applicable Grade
                       </h4>
                       <p className="text-lg text-gray-900">
-                        {selectedFee.applicableClass}
+                        Grade {getGradeNameById(selectedFee.applicableGrade)}
                       </p>
                     </div>
                     <div>
@@ -795,6 +811,17 @@ const CreateFees = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        title="Delete Fee Structure"
+        message="Are you sure you want to delete this fee structure?"
+        itemName={feeToDelete?.title}
+        isLoading={deleteFeeStructure.isPending}
+      />
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">

@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Icons } from "../../utils/icons";
+import Icons from "../../utils/icons";
 import { useStudent } from "../../hooks/useApiHooks";
 
 const StudentDetail = () => {

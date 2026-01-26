@@ -3,6 +3,7 @@ import {
   authApi,
   dashboardApi,
   studentsApi,
+  studentsWithFeesApi,
   teachersApi,
   classesApi,
   subjectsApi,
@@ -172,6 +173,16 @@ export const useDeleteStudent = () => {
   });
 };
 
+// Students with fees hook
+export const useStudentsWithFees = (filters = {}, enabled = false) => {
+  return useApiQuery([QUERY_KEYS.STUDENTS_WITH_FEES, filters], filters, {
+    queryFn: () => studentsWithFeesApi.getStudentsWithFees(filters),
+    enabled: enabled, // Only run when enabled
+    keepPreviousData: true, // Keep previous data while loading new data
+    staleTime: 30000, // Cache for 30 seconds
+  });
+};
+
 // Classes hooks
 export const useClasses = () => {
   return useApiQuery(QUERY_KEYS.CLASSES, null, {
@@ -285,6 +296,18 @@ export const useFeeStructures = () => {
   });
 };
 
+export const useFeeTypes = () => {
+  return useApiQuery(QUERY_KEYS.FEE_TYPES, null, {
+    queryFn: () => feesApi.getFeeTypes(),
+  });
+};
+
+export const useAcademicSessions = () => {
+  return useApiQuery(QUERY_KEYS.ACADEMIC_SESSIONS, null, {
+    queryFn: () => feesApi.getAcademicSessions(),
+  });
+};
+
 export const usePaymentHistory = (studentId) => {
   return useApiQuery([QUERY_KEYS.PAYMENT_HISTORY, studentId], null, {
     queryFn: () => feesApi.getPaymentHistory(studentId),
@@ -314,7 +337,7 @@ export const useUpdateFeeStructure = () => {
 
 export const useDeleteFeeStructure = () => {
   return useApiMutation({
-    mutationFn: ({ id }) => feesApi.deleteStructure(id),
+    mutationFn: ({ feeStructureId }) => feesApi.deleteStructure(feeStructureId),
     invalidateQueries: [QUERY_KEYS.FEE_STRUCTURES],
   });
 };

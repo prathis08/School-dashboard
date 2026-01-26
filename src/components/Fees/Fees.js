@@ -1,31 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Search,
   Plus,
-  Filter,
-  MoreHorizontal,
-  Edit,
-  Trash2,
   DollarSign,
-  Calendar,
   GraduationCap,
   CheckCircle,
   XCircle,
   Clock,
   Download,
-  CreditCard,
   AlertCircle,
   X,
+  CloudFog,
+  CloudLightning,
 } from "lucide-react";
 import {
   useFeeStructures,
-  useCreateFeeStructure,
-  useUpdateFeeStructure,
-  useDeleteFeeStructure,
+  useFeeTypes,
+  useGradesAndClasses,
+  useStudentsWithFees,
 } from "../../hooks/useApiHooks";
-import { API_ENDPOINTS } from "../../services/api";
-import feesData from "../../dummy-data/fees.json";
-import studentsData from "../../dummy-data/students.json";
 
 const Fees = () => {
   // Use TanStack Query hooks
@@ -34,67 +27,210 @@ const Fees = () => {
     isLoading: loading,
     error,
   } = useFeeStructures();
-  const createFeeStructure = useCreateFeeStructure();
-  const updateFeeStructure = useUpdateFeeStructure();
-  const deleteFeeStructure = useDeleteFeeStructure();
+
+  const {
+    data: feeTypesData,
+    isLoading: feeTypesLoading,
+    error: feeTypesError,
+  } = useFeeTypes();
+
+  const {
+    data: gradesAndClassesData,
+    isLoading: gradesAndClassesLoading,
+    error: gradesAndClassesError,
+  } = useGradesAndClasses();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterFeeType, setFilterFeeType] = useState("All");
-  const [filterClass, setFilterClass] = useState("All");
-  const [filterAcademicSession, setFilterAcademicSession] = useState("All");
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [filterGrade, setFilterGrade] = useState("All");
+  const [filterSection, setFilterSection] = useState("All");
 
-  // Safely extract data from response
-  const fees = Array.isArray(feesResponse)
-    ? feesResponse
-    : Array.isArray(feesResponse?.data)
-    ? feesResponse.data
+  // Build filters object for API call
+  const apiFilters = {
+    gradeId: filterGrade !== "All" ? filterGrade : null,
+    feeType: filterFeeType !== "All" ? filterFeeType : null,
+    name: searchTerm || null,
+    section: filterSection !== "All" ? filterSection : null,
+    status: filterStatus !== "All" ? filterStatus : null,
+  };
+
+  // Check if any filters are actively applied
+  const hasActiveFilters =
+    searchTerm ||
+    filterStatus !== "All" ||
+    filterFeeType !== "All" ||
+    filterGrade !== "All" ||
+    filterSection !== "All";
+
+  // Use students with fees API when filters are applied
+  const {
+    data: studentsWithFeesResponse,
+    isLoading: studentsWithFeesLoading,
+    error: studentsWithFeesError,
+  } = useStudentsWithFees(apiFilters, hasActiveFilters);
+
+  // Use the API response when filters are applied, otherwise empty array
+  const rawStudentData = hasActiveFilters
+    ? Array.isArray(studentsWithFeesResponse?.data)
+      ? studentsWithFeesResponse.data
+      : studentsWithFeesResponse?.data?.students || []
     : [];
 
-  // Use dummy data for now
-  const [students] = useState(studentsData || []);
+  const getGradeForStudent = (student) => {
+    let gradeName;
+    gradesAndClassesData.data?.grades.forEach((grade) => {
+      if (student.gradeId === grade.gradeId) {
+        gradeName = grade.grade;
+      }
+    });
+    return gradeName;
+  };
+
+  const getSectionForStudent = (student) => {
+    let sectionName;
+    gradesAndClassesData.data?.grades.forEach((grade) => {
+      if (student.gradeId === grade.gradeId) {
+        grade.classes.forEach((cls) => {
+          if (student.classId === cls.classId) {
+            sectionName = cls.section;
+          }
+        });
+      }
+    });
+    return sectionName;
+  };
+
+  // Transform the API response to match the expected fee structure
+  const fees = rawStudentData.flatMap((student) => {
+    const studentName = `${student.firstName || ""} ${
+      student.lastName || ""
+    }`.trim();
+    const grade = getGradeForStudent(student) || "N/A";
+    const className = "N/A";
+    const section = getSectionForStudent(student) || "N/A";
+
+    // Create fee records from payment history
+    const paymentRecords = (student.feeInfo?.paymentHistory || []).map(
+      (payment, index) => ({
+        id: `${student.studentId}-payment-${index}`,
+        studentId: student.studentId,
+        studentName: studentName,
+        grade: grade,
+        class: className,
+        section: section,
+        feeType: payment.feeType || "Unknown",
+        amount: payment.amount || 0,
+        status: payment.status || "Pending",
+        dueDate: payment.dueDate,
+        paidDate: payment.paidDate,
+        paymentMethod: payment.paymentMethod,
+        discountApplied: payment.discountApplied || 0,
+        installmentNumber: payment.installmentNumber || 1,
+        totalInstallments: payment.totalInstallments || 1,
+        remarks: payment.remarks || "",
+        ...payment,
+      }),
+    );
+
+    // If no payment history, create a summary record from feeInfo
+    if (paymentRecords.length === 0 && student.feeInfo) {
+      const { totalFees, totalPaid, outstandingAmount } = student.feeInfo;
+
+      // Only create records if there are actual fees
+      if (totalFees > 0 || outstandingAmount > 0) {
+        paymentRecords.push({
+          id: `${student.studentId}-summary`,
+          studentId: student.studentId,
+          studentName: studentName,
+          grade: grade,
+          class: className,
+          section: section,
+          feeType: "Total Fees",
+          amount: totalFees || 0,
+          status: outstandingAmount > 0 ? "Pending" : "Paid",
+          dueDate: null,
+          paidDate: totalPaid > 0 ? new Date().toISOString() : null,
+          paymentMethod: null,
+          discountApplied: 0,
+          installmentNumber: 1,
+          totalInstallments: 1,
+          remarks:
+            outstandingAmount > 0
+              ? `Outstanding: ₹${outstandingAmount}`
+              : "Fully paid",
+          totalPaid: totalPaid,
+          outstandingAmount: outstandingAmount,
+        });
+      }
+    }
+
+    return paymentRecords;
+  });
 
   const statuses = ["All", "Paid", "Pending", "Overdue"];
+
+  // Get fee types from API
+  const feeTypesFromApi = feeTypesData?.data || [];
   const feeTypes = [
     "All",
-    "Tuition Fee",
-    "Library Fee",
-    "Lab Fee",
-    "Sports Fee",
-    "Transportation Fee",
-    "Examination Fee",
-    "Development Fee",
-    "Activity Fee",
+    ...feeTypesFromApi.map((type) => type.label || type.value || type),
   ];
 
-  const classes = ["All", "Grade 9", "Grade 10", "Grade 11", "Grade 12"];
-  const academicSessions = ["All", "2024-2025", "2025-2026", "2026-2027"];
+  // Process grades and classes data from API
+  const gradesData = gradesAndClassesData?.data?.grades || [];
 
-  // Filter fees based on search and filters
-  const filteredFees = fees.filter((fee) => {
-    const matchesSearch =
-      fee.studentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      fee.studentId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      fee.feeType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      fee.grade?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      fee.class?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === "All" || fee.status === filterStatus;
-    const matchesFeeType =
-      filterFeeType === "All" || fee.feeType === filterFeeType;
-    const matchesClass = filterClass === "All" || fee.grade === filterClass;
-    const matchesSession =
-      filterAcademicSession === "All" ||
-      fee.academicSession === filterAcademicSession;
+  // Create class mapping with display names and IDs
+  const classMapping = {};
+  const allGrades = gradesData
+    .map((grade) => {
+      const displayName = `Grade ${grade.grade}`;
+      classMapping[grade.gradeId] = {
+        displayName,
+        gradeId: grade.gradeId,
+        grade: grade.grade,
+        classes: grade.classes || [],
+      };
+      return grade.gradeId;
+    })
+    .filter(Boolean);
 
-    return (
-      matchesSearch &&
-      matchesStatus &&
-      matchesFeeType &&
-      matchesClass &&
-      matchesSession
-    );
-  });
+  // Use API data only
+  const grades = ["All", ...new Set(allGrades)];
+
+  // Extract sections only for the selected grade
+  const getClassSections = (selectedGradeId) => {
+    if (!selectedGradeId || selectedGradeId === "All") {
+      return [];
+    }
+
+    const gradeInfo = classMapping[selectedGradeId];
+    if (!gradeInfo) {
+      return [];
+    }
+
+    // Get all sections for the selected grade
+    const sectionsForGrade = (gradeInfo.classes || [])
+      .map((cls) => cls.section)
+      .filter(Boolean);
+
+    return sectionsForGrade;
+  };
+
+  const availableSections = getClassSections(filterGrade);
+  const sections = ["All", ...new Set(availableSections)];
+
+  // Handler for grade change - reset section when grade changes
+  const handleGradeChange = (selectedGrade) => {
+    setFilterGrade(selectedGrade);
+    // Reset section to "All" when grade changes
+    if (selectedGrade === "All" || selectedGrade !== filterGrade) {
+      setFilterSection("All");
+    }
+  };
+
+  // Since API handles filtering, we use fees directly as filteredFees
+  const filteredFees = fees;
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -138,15 +274,19 @@ const Fees = () => {
     });
   };
 
-  // Calculate statistics
-  const totalAmount = fees.reduce((sum, fee) => sum + (fee.amount || 0), 0);
-  const paidAmount = fees
+  // Calculate statistics - use filtered data when filters are applied, otherwise show zeros
+  const statsData = hasActiveFilters ? filteredFees : [];
+  const totalAmount = statsData.reduce(
+    (sum, fee) => sum + (fee.amount || 0),
+    0,
+  );
+  const paidAmount = statsData
     .filter((fee) => fee.status === "Paid")
     .reduce((sum, fee) => sum + (fee.amount || 0), 0);
-  const pendingAmount = fees
+  const pendingAmount = statsData
     .filter((fee) => fee.status === "Pending")
     .reduce((sum, fee) => sum + (fee.amount || 0), 0);
-  const overdueAmount = fees
+  const overdueAmount = statsData
     .filter((fee) => fee.status === "Overdue")
     .reduce((sum, fee) => sum + (fee.amount || 0), 0);
 
@@ -185,7 +325,7 @@ const Fees = () => {
                   {fee.studentName}
                 </h3>
                 <p className="text-sm text-gray-600">
-                  {fee.studentId} • {fee.grade} • {fee.class}
+                  Grade {fee.grade} • Section {fee.section}
                 </p>
               </div>
             </div>
@@ -258,7 +398,7 @@ const Fees = () => {
               <div className="flex items-center space-x-2">
                 <span
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                    fee.status
+                    fee.status,
                   )}`}
                 >
                   <StatusIcon className="w-3 h-3 mr-1" />
@@ -271,14 +411,8 @@ const Fees = () => {
                 )}
               </div>
               <div className="flex space-x-1">
-                <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200">
-                  <Edit className="w-4 h-4" />
-                </button>
                 <button className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200">
                   <Download className="w-4 h-4" />
-                </button>
-                <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200">
-                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -288,7 +422,12 @@ const Fees = () => {
     );
   };
 
-  if (loading) {
+  if (
+    loading ||
+    feeTypesLoading ||
+    gradesAndClassesLoading ||
+    studentsWithFeesLoading
+  ) {
     return (
       <div className="space-y-6">
         <div className="animate-pulse">
@@ -322,7 +461,7 @@ const Fees = () => {
             <Download className="w-4 h-4 mr-2" />
             Export Report
           </button>
-          <button className="btn-primary" onClick={() => setShowAddModal(true)}>
+          <button className="btn-primary">
             <Plus className="w-4 h-4 mr-2" />
             Record Payment
           </button>
@@ -336,28 +475,28 @@ const Fees = () => {
           amount={totalAmount}
           icon={DollarSign}
           color="bg-blue-500"
-          count={fees.length}
+          count={statsData.length}
         />
         <StatsCard
           title="Paid Amount"
           amount={paidAmount}
           icon={CheckCircle}
           color="bg-green-500"
-          count={fees.filter((f) => f.status === "Paid").length}
+          count={statsData.filter((f) => f.status === "Paid").length}
         />
         <StatsCard
           title="Pending Amount"
           amount={pendingAmount}
           icon={Clock}
           color="bg-yellow-500"
-          count={fees.filter((f) => f.status === "Pending").length}
+          count={statsData.filter((f) => f.status === "Pending").length}
         />
         <StatsCard
           title="Overdue Amount"
           amount={overdueAmount}
           icon={AlertCircle}
           color="bg-red-500"
-          count={fees.filter((f) => f.status === "Overdue").length}
+          count={statsData.filter((f) => f.status === "Overdue").length}
         />
       </div>
 
@@ -419,36 +558,74 @@ const Fees = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Class
+              Grade {gradesAndClassesLoading && "(Loading...)"}
             </label>
             <select
-              value={filterClass}
-              onChange={(e) => setFilterClass(e.target.value)}
+              value={filterGrade}
+              onChange={(e) => handleGradeChange(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              disabled={gradesAndClassesLoading}
             >
-              {classes.map((cls) => (
-                <option key={cls} value={cls}>
-                  {cls === "All" ? "All Classes" : cls}
-                </option>
-              ))}
+              {gradesAndClassesLoading ? (
+                <option value="">Loading grades...</option>
+              ) : (
+                grades.map((grade) => {
+                  const displayName =
+                    grade === "All"
+                      ? "All Grades"
+                      : classMapping[grade]?.displayName || `Grade ${grade}`;
+                  return (
+                    <option key={grade} value={grade}>
+                      {displayName}
+                    </option>
+                  );
+                })
+              )}
             </select>
+            {!gradesAndClassesLoading && grades.length <= 1 && (
+              <p className="text-xs text-orange-500 mt-1">
+                No grades available from API
+              </p>
+            )}
+            {gradesAndClassesError && (
+              <p className="text-xs text-red-500 mt-1">
+                Error loading grades: {gradesAndClassesError.message}
+              </p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Academic Session
+              Section
+              {filterGrade === "All" && " (Select a grade first)"}
+              {gradesAndClassesLoading && " (Loading...)"}
             </label>
             <select
-              value={filterAcademicSession}
-              onChange={(e) => setFilterAcademicSession(e.target.value)}
+              value={filterSection}
+              onChange={(e) => setFilterSection(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              disabled={gradesAndClassesLoading || filterGrade === "All"}
             >
-              {academicSessions.map((session) => (
-                <option key={session} value={session}>
-                  {session === "All" ? "All Sessions" : session}
-                </option>
-              ))}
+              {filterGrade === "All" ? (
+                <option value="All">Select a grade first</option>
+              ) : gradesAndClassesLoading ? (
+                <option value="All">Loading sections...</option>
+              ) : (
+                sections.map((section) => (
+                  <option key={section} value={section}>
+                    {section === "All" ? "All Sections" : `Section ${section}`}
+                  </option>
+                ))
+              )}
             </select>
+            {filterGrade !== "All" &&
+              !gradesAndClassesLoading &&
+              availableSections.length === 0 && (
+                <p className="text-xs text-orange-500 mt-1">
+                  No sections found for{" "}
+                  {classMapping[filterGrade]?.displayName || filterGrade}
+                </p>
+              )}
           </div>
         </div>
 
@@ -456,8 +633,8 @@ const Fees = () => {
         {(searchTerm ||
           filterStatus !== "All" ||
           filterFeeType !== "All" ||
-          filterClass !== "All" ||
-          filterAcademicSession !== "All") && (
+          filterGrade !== "All" ||
+          filterSection !== "All") && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm text-gray-600">Active filters:</span>
@@ -494,23 +671,23 @@ const Fees = () => {
                   </button>
                 </span>
               )}
-              {filterClass !== "All" && (
+              {filterGrade !== "All" && (
                 <span className="inline-flex items-center px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
-                  Class: {filterClass}
+                  Grade: {classMapping[filterGrade]?.displayName || filterGrade}
                   <button
-                    onClick={() => setFilterClass("All")}
+                    onClick={() => setFilterGrade("All")}
                     className="ml-1 text-yellow-600 hover:text-yellow-800"
                   >
                     <X className="w-3 h-3" />
                   </button>
                 </span>
               )}
-              {filterAcademicSession !== "All" && (
-                <span className="inline-flex items-center px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded-full">
-                  Session: {filterAcademicSession}
+              {filterSection !== "All" && (
+                <span className="inline-flex items-center px-2 py-1 bg-pink-100 text-pink-800 text-xs rounded-full">
+                  Section: {filterSection}
                   <button
-                    onClick={() => setFilterAcademicSession("All")}
-                    className="ml-1 text-indigo-600 hover:text-indigo-800"
+                    onClick={() => setFilterSection("All")}
+                    className="ml-1 text-pink-600 hover:text-pink-800"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -521,8 +698,8 @@ const Fees = () => {
                   setSearchTerm("");
                   setFilterStatus("All");
                   setFilterFeeType("All");
-                  setFilterClass("All");
-                  setFilterAcademicSession("All");
+                  setFilterGrade("All");
+                  setFilterSection("All");
                 }}
                 className="text-sm text-gray-600 hover:text-gray-800 underline"
               >
@@ -534,24 +711,44 @@ const Fees = () => {
       </div>
 
       {/* Results Summary */}
-      <div className="flex items-center justify-between text-sm text-gray-600">
-        <span>
-          Showing {filteredFees.length} of {fees.length} fee records
-        </span>
-        {filteredFees.length !== fees.length && (
-          <span className="text-blue-600">Filtered results</span>
-        )}
-      </div>
+      {hasActiveFilters && (
+        <div className="flex items-center justify-between text-sm text-gray-600">
+          <span>
+            Showing {filteredFees.length} of {fees.length} fee records
+          </span>
+          {filteredFees.length !== fees.length && (
+            <span className="text-blue-600">Filtered results</span>
+          )}
+        </div>
+      )}
 
       {/* Fee Cards */}
-      <div className="space-y-4">
-        {filteredFees.map((fee) => (
-          <FeeCard key={fee.id} fee={fee} />
-        ))}
-      </div>
+      {hasActiveFilters ? (
+        <div className="space-y-4">
+          {filteredFees.map((fee) => (
+            <FeeCard key={fee.id} fee={fee} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <GraduationCap className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Select Filters to View Fee Details
+          </h3>
+          <p className="text-gray-600 mb-4">
+            Use the search bar or apply filters above to view fee records for
+            specific students, classes, or fee types.
+          </p>
+          <div className="text-sm text-gray-500">
+            <p>• Search by student name or ID</p>
+            <p>• Filter by class, fee type, or payment status</p>
+            <p>• Select an academic session</p>
+          </div>
+        </div>
+      )}
 
-      {/* Empty State */}
-      {filteredFees.length === 0 && (
+      {/* Empty State for No Results */}
+      {hasActiveFilters && filteredFees.length === 0 && (
         <div className="text-center py-12">
           <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -575,6 +772,56 @@ const Fees = () => {
               </h3>
               <p className="mt-1 text-sm text-red-700">
                 {error.message || error.toString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {feeTypesError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex">
+            <AlertCircle className="w-5 h-5 text-red-400" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">
+                Error loading fee types
+              </h3>
+              <p className="mt-1 text-sm text-red-700">
+                {feeTypesError.message || feeTypesError.toString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {gradesAndClassesError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex">
+            <AlertCircle className="w-5 h-5 text-red-400" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">
+                Error loading grades and classes
+              </h3>
+              <p className="mt-1 text-sm text-red-700">
+                {gradesAndClassesError.message ||
+                  gradesAndClassesError.toString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {studentsWithFeesError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex">
+            <AlertCircle className="w-5 h-5 text-red-400" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">
+                Error loading students with fees
+              </h3>
+              <p className="mt-1 text-sm text-red-700">
+                {studentsWithFeesError.message ||
+                  studentsWithFeesError.toString()}
               </p>
             </div>
           </div>

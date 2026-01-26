@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Icons } from "../../utils/icons";
+import Icons from "../../utils/icons";
 import { useSubject, useDeleteSubject } from "../../hooks/useApiHooks";
 
 const SubjectDetail = () => {
@@ -132,7 +132,7 @@ const SubjectDetail = () => {
       <div>
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center">
-            {Icons.Users}
+            <Icons.Users className="w-5 h-5" />
             <span className="ml-2">Assigned Teachers</span>
           </h3>
           {subject.teachers && subject.teachers.length > 0 ? (
@@ -171,7 +171,7 @@ const SubjectDetail = () => {
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold flex items-center">
-          {Icons.Users}
+          <Icons.Users className="w-5 h-5" />
           <span className="ml-2">Assigned Teachers</span>
         </h3>
         <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
@@ -234,7 +234,7 @@ const SubjectDetail = () => {
             onClick={() => navigate("/subjects")}
             className="mr-4 p-2 hover:bg-gray-100 rounded-lg"
           >
-            {Icons.ArrowLeft}
+            <Icons.ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">

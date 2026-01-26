@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Icons } from "../../utils/icons";
+import Icons from "../../utils/icons";
 import { useTeachers, useDeleteTeacher } from "../../hooks/useApiHooks";
 
 const Teachers = () => {

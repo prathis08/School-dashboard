@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Icons } from "../../utils/icons";
+import Icons from "../../utils/icons";
 import {
   useSubjects,
   useTeachers,
@@ -613,7 +613,7 @@ const Subjects = () => {
       {/* Empty State */}
       {filteredSubjects.length === 0 && (
         <div className="text-center py-12">
-          {Icons.BookOpen}
+          <Icons.BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             No subjects found
           </h3>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Icons } from "../../utils/icons";
+import Icons from "../../utils/icons";
 import { useStudents, useDeleteStudent } from "../../hooks/useApiHooks";
 
 const Students = () => {

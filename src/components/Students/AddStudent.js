@@ -16,7 +16,6 @@ import {
   Paperclip,
 } from "lucide-react";
 import { useCreateStudent, useGradesAndClasses } from "../../hooks/useApiHooks";
-import { API_ENDPOINTS } from "../../services/api";
 import { getSchoolId } from "../../utils/dashboardConfig";
 
 const AddStudent = () => {
@@ -35,6 +34,7 @@ const AddStudent = () => {
   // State for processed grades and classes from API
   const [gradeOptions, setGradeOptions] = useState([]);
   const [classOptions, setClassOptions] = useState({});
+  const [gradeIdMap, setGradeIdMap] = useState({}); // Maps grade name to grade ID
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -84,13 +84,10 @@ const AddStudent = () => {
 
   // Process grades and classes data from API
   useEffect(() => {
-    console.log("Grades and classes data received:", gradesAndClassesData);
-    console.log("Classes loading:", classesLoading);
-    console.log("Classes error:", classesError);
-
     if (gradesAndClassesData && gradesAndClassesData.success) {
       const grades = [];
       const classMap = {};
+      const gradeIds = {}; // Maps grade name to grade ID
 
       // Handle the new API response format
       const gradesData = gradesAndClassesData.data.grades;
@@ -104,13 +101,16 @@ const AddStudent = () => {
           const grade = `${gradeItem.grade}`;
           grades.push(grade);
 
+          // Store the grade ID mapping from the API response
+          gradeIds[grade] = gradeItem.gradeId;
+
           // Process classes for this grade
           if (gradeItem.classes && Array.isArray(gradeItem.classes)) {
             classMap[grade] = gradeItem.classes.map((classItem) => {
-              return (
-                classItem.class_name ||
-                `${grade} - Section ${classItem.section}`
-              );
+              return {
+                classId: classItem.classId,
+                className: `${grade} - Section ${classItem.section}`,
+              };
             });
           } else {
             classMap[grade] = [];
@@ -119,14 +119,16 @@ const AddStudent = () => {
 
         console.log("Final grades:", grades);
         console.log("Final class map:", classMap);
+        console.log("Final grade IDs:", gradeIds);
 
         setGradeOptions(grades.sort());
         setClassOptions(classMap);
+        setGradeIdMap(gradeIds);
       } else {
         console.warn(
           "Grades data is not an array:",
           typeof gradesData,
-          gradesData
+          gradesData,
         );
       }
     } else if (classesError) {
@@ -147,12 +149,15 @@ const AddStudent = () => {
         "Grade 12",
       ];
       const fallbackClassMap = {};
+      const fallbackGradeIds = {};
       fallbackGrades.forEach((grade, index) => {
         fallbackClassMap[grade] = [`${index + 1}-A`, `${index + 1}-B`];
+        fallbackGradeIds[grade] = `GRADE_FALLBACK_${index + 1}`; // Fallback grade IDs
       });
 
       setGradeOptions(fallbackGrades);
       setClassOptions(fallbackClassMap);
+      setGradeIdMap(fallbackGradeIds);
     }
   }, [gradesAndClassesData, classesError, classesLoading]);
 
@@ -325,6 +330,7 @@ const AddStudent = () => {
         address: formData.address,
         phone: formData.phone,
         grade: formData.grade,
+        gradeId: gradeIdMap[formData.grade] || null,
         classId: formData.class,
         admissionDate: formData.admissionDate,
         status: formData.status,
@@ -357,7 +363,7 @@ const AddStudent = () => {
 
       console.log(
         "Sending student data:",
-        JSON.stringify(studentData, null, 2)
+        JSON.stringify(studentData, null, 2),
       );
 
       // Call API to create student
@@ -771,19 +777,15 @@ const AddStudent = () => {
                       </option>
                     )}
                     {formData.grade &&
-                      classOptions[formData.grade]?.map((className) => (
-                        <option key={className} value={className}>
-                          {className}
+                      classOptions[formData.grade]?.map((classItem) => (
+                        <option
+                          key={classItem.classId}
+                          value={classItem.classId}
+                        >
+                          {classItem.className}
                         </option>
                       ))}
                   </select>
-                  {/* Debug info */}
-                  {process.env.NODE_ENV === "development" && formData.grade && (
-                    <div className="mt-1 text-xs text-gray-500">
-                      Debug: {classOptions[formData.grade]?.length || 0} classes
-                      for {formData.grade}
-                    </div>
-                  )}
                   {errors.class && (
                     <p className="mt-1 text-sm text-red-600 flex items-center">
                       <AlertCircle className="w-4 h-4 mr-1" />
