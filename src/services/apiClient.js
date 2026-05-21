@@ -1,9 +1,9 @@
 import { getAuthToken, removeAuthToken } from "../utils/cookies";
 import { clearDashboardConfig } from "../utils/dashboardConfig";
 import { getApiBaseUrl } from "../utils/apiConfig";
-export { getApiBaseUrl };
-// API Endpoints (imported from api.js for backward compatibility)
 import { API_ENDPOINTS } from "./api";
+
+export { getApiBaseUrl };
 
 // Enhanced API client for TanStack Query
 export const apiClient = async (endpoint, options = {}) => {
