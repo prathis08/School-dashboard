@@ -8,9 +8,12 @@ import {
   useUpdateSubject,
   useDeleteSubject,
 } from "../../hooks/useApiHooks";
+import { useToast, useConfirm } from "../../context/UIProvider";
 
 const Subjects = () => {
   const navigate = useNavigate();
+  const toast = useToast();
+  const confirm = useConfirm();
 
   // Use TanStack Query hooks
   const {
@@ -31,14 +34,14 @@ const Subjects = () => {
   const subjects = Array.isArray(subjectsData?.data)
     ? subjectsData.data
     : Array.isArray(subjectsData)
-    ? subjectsData
-    : [];
+      ? subjectsData
+      : [];
 
   const availableTeachers = Array.isArray(teachersResponse)
     ? teachersResponse
     : Array.isArray(teachersResponse?.data)
-    ? teachersResponse.data
-    : [];
+      ? teachersResponse.data
+      : [];
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("All");
@@ -75,8 +78,17 @@ const Subjects = () => {
   };
 
   const handleTeacherSelect = (teacherId) => {
-    const teacher = availableTeachers.find((t) => t.id === parseInt(teacherId));
-    if (teacher && !formData.teachers.find((t) => t.id === teacher.id)) {
+    const teacher = availableTeachers.find(
+      (t) => t.teacherId === teacherId || t.teacher_id === teacherId,
+    );
+    if (
+      teacher &&
+      !formData.teachers.find(
+        (t) =>
+          (t.teacherId || t.teacher_id) ===
+          (teacher.teacherId || teacher.teacher_id),
+      )
+    ) {
       setFormData((prev) => ({
         ...prev,
         teachers: [...prev.teachers, teacher],
@@ -87,7 +99,9 @@ const Subjects = () => {
   const removeTeacher = (teacherId) => {
     setFormData((prev) => ({
       ...prev,
-      teachers: prev.teachers.filter((t) => t.id !== teacherId),
+      teachers: prev.teachers.filter(
+        (t) => (t.teacherId || t.teacher_id) !== teacherId,
+      ),
     }));
   };
 
@@ -96,14 +110,14 @@ const Subjects = () => {
 
     // Validate that at least one teacher is selected
     if (formData.teachers.length === 0) {
-      alert("Please select at least one teacher for this subject.");
+      toast.warning("Please select at least one teacher for this subject.");
       return;
     }
 
     try {
       if (editingSubject) {
         await updateSubject.mutateAsync({
-          id: editingSubject.id,
+          id: editingSubject.subjectId || editingSubject.subject_id,
           data: formData,
         });
       } else {
@@ -126,16 +140,20 @@ const Subjects = () => {
       });
     } catch (error) {
       console.error("Error saving subject:", error);
-      alert("Failed to save subject. Please try again.");
+      toast.error("Failed to save subject. Please try again.");
     }
   };
 
   const filteredSubjects = subjects.filter((subject) => {
     const matchesSearch =
+      (subject.subjectName &&
+        subject.subjectName.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (subject.subject_name &&
         subject.subject_name
           .toLowerCase()
           .includes(searchTerm.toLowerCase())) ||
+      (subject.subjectCode &&
+        subject.subjectCode.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (subject.subject_code &&
         subject.subject_code
           .toLowerCase()
@@ -146,12 +164,18 @@ const Subjects = () => {
             teacher?.user?.firstName
               ?.toLowerCase()
               .includes(searchTerm.toLowerCase()) ||
+            teacher?.user?.first_name
+              ?.toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
             teacher?.user?.lastName
+              ?.toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            teacher?.user?.last_name
               ?.toLowerCase()
               .includes(searchTerm.toLowerCase()) ||
             teacher?.user?.email
               ?.toLowerCase()
-              .includes(searchTerm.toLowerCase())
+              .includes(searchTerm.toLowerCase()),
         ));
     const matchesDepartment =
       filterDepartment === "All" || subject.department === filterDepartment;
@@ -173,8 +197,8 @@ const Subjects = () => {
   const handleEdit = (subject) => {
     setEditingSubject(subject);
     setFormData({
-      subject_name: subject.subject_name || "",
-      subject_code: subject.subject_code || "",
+      subject_name: subject.subjectName || subject.subject_name || "",
+      subject_code: subject.subjectCode || subject.subject_code || "",
       department: subject.department || "",
       description: subject.description || "",
       credits: subject.credits || 3,
@@ -185,13 +209,19 @@ const Subjects = () => {
   };
 
   const handleDelete = async (subjectId) => {
-    if (window.confirm("Are you sure you want to delete this subject?")) {
-      try {
-        await deleteSubject.mutateAsync({ id: subjectId });
-      } catch (error) {
-        console.error("Error deleting subject:", error);
-        alert("Error deleting subject. Please try again.");
-      }
+    const ok = await confirm({
+      title: "Delete subject?",
+      message: "Are you sure you want to delete this subject?",
+      confirmLabel: "Delete",
+      tone: "danger",
+    });
+    if (!ok) return;
+    try {
+      await deleteSubject.mutateAsync({ id: subjectId });
+      toast.success("Subject deleted successfully");
+    } catch (error) {
+      console.error("Error deleting subject:", error);
+      toast.error("Error deleting subject. Please try again.");
     }
   };
 
@@ -211,36 +241,42 @@ const Subjects = () => {
 
   // SubjectCard Component
   const SubjectCard = ({ subject }) => (
-    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200">
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
           <div className="flex items-center mb-2">
             <span
               className={`px-2 py-1 rounded-full text-xs font-medium mr-2 ${getSubjectColor(
-                subject.subject_name
+                subject.subjectName || subject.subject_name,
               )}`}
             >
-              {subject.subject_code}
+              {subject.subjectCode || subject.subject_code}
             </span>
             <span
               className={`px-2 py-1 rounded-full text-xs ${
-                subject.is_active
-                  ? "bg-green-100 text-green-800"
-                  : "bg-red-100 text-red-800"
+                subject.isActive || subject.is_active
+                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                  : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
               }`}
             >
-              {subject.is_active ? "Active" : "Inactive"}
+              {subject.isActive || subject.is_active ? "Active" : "Inactive"}
             </span>
           </div>
           <h3
-            className="text-lg font-semibold text-gray-900 mb-1 cursor-pointer hover:text-blue-600"
-            onClick={() => navigate(`/subjects/${subject.subject_id}`)}
+            className="text-lg font-semibold text-gray-900 dark:text-white mb-1 cursor-pointer hover:text-blue-600"
+            onClick={() =>
+              navigate(`/subjects/${subject.subjectId || subject.subject_id}`, {
+                state: { subject },
+              })
+            }
           >
-            {subject.subject_name}
+            {subject.subjectName || subject.subject_name}
           </h3>
-          <p className="text-sm text-gray-600 mb-2">{subject.department}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+            {subject.department}
+          </p>
           {subject.description && (
-            <p className="text-sm text-gray-500 line-clamp-2 mb-3">
+            <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">
               {subject.description}
             </p>
           )}
@@ -248,13 +284,15 @@ const Subjects = () => {
         <div className="flex space-x-2">
           <button
             onClick={() => handleEdit(subject)}
-            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900 rounded-lg transition-colors duration-200"
           >
             <Icons.Edit className="w-4 h-4" />
           </button>
           <button
-            onClick={() => handleDelete(subject.subject_id)}
-            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+            onClick={() =>
+              handleDelete(subject.subjectId || subject.subject_id)
+            }
+            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg transition-colors duration-200"
           >
             <Icons.Trash2 className="w-4 h-4" />
           </button>
@@ -263,14 +301,14 @@ const Subjects = () => {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center text-gray-600">
-            <Icons.Users className="w-4 h-4 text-gray-500" />
+          <div className="flex items-center text-gray-600 dark:text-gray-400 dark:text-gray-500">
+            <Icons.Users className="w-4 h-4 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
             <span className="ml-1">
               Teachers: {subject.teachers ? subject.teachers.length : 0}
             </span>
           </div>
-          <div className="flex items-center text-gray-600">
-            <Icons.BookOpen className="w-4 h-4 text-gray-500" />
+          <div className="flex items-center text-gray-600 dark:text-gray-400 dark:text-gray-500">
+            <Icons.BookOpen className="w-4 h-4 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
             <span className="ml-1">Credits: {subject.credits}</span>
           </div>
         </div>
@@ -280,13 +318,14 @@ const Subjects = () => {
             {subject.teachers.slice(0, 2).map((teacher, index) => (
               <span
                 key={index}
-                className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full"
+                className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full"
               >
-                {teacher.user.firstName} {teacher.user.lastName}
+                {teacher.user?.firstName || teacher.user?.first_name}{" "}
+                {teacher.user?.lastName || teacher.user?.last_name}
               </span>
             ))}
             {subject.teachers.length > 2 && (
-              <span className="text-xs text-gray-500 px-2 py-1">
+              <span className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1">
                 +{subject.teachers.length - 2} more
               </span>
             )}
@@ -294,15 +333,20 @@ const Subjects = () => {
         )}
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-200">
+      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <div className="flex justify-between items-center">
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
             Created: {new Date(subject.createdAt).toLocaleDateString()}
           </div>
           <div className="flex space-x-2">
             <button
-              onClick={() => navigate(`/subjects/${subject.subject_id}`)}
-              className="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200"
+              onClick={() =>
+                navigate(
+                  `/subjects/${subject.subjectId || subject.subject_id}`,
+                  { state: { subject } },
+                )
+              }
+              className="px-3 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800"
             >
               View Details
             </button>
@@ -314,7 +358,7 @@ const Subjects = () => {
 
   const Modal = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
         <h2 className="text-xl font-bold text-gray-900 mb-4">
           {editingSubject ? "Edit Subject" : "Add New Subject"}
         </h2>
@@ -328,7 +372,7 @@ const Subjects = () => {
               name="subject_name"
               value={formData.subject_name}
               onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Enter subject name"
               required
             />
@@ -342,7 +386,7 @@ const Subjects = () => {
               name="subject_code"
               value={formData.subject_code}
               onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Enter subject code"
               required
             />
@@ -355,7 +399,7 @@ const Subjects = () => {
               name="department"
               value={formData.department}
               onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               required
             >
               <option value="">Select Department</option>
@@ -377,7 +421,7 @@ const Subjects = () => {
               onChange={handleInputChange}
               min="1"
               max="6"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               required
             />
           </div>
@@ -389,15 +433,15 @@ const Subjects = () => {
             <select
               onChange={(e) => handleTeacherSelect(e.target.value)}
               value=""
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="">Select a teacher to add</option>
               {availableTeachers
                 .filter(
                   (teacher) =>
                     !formData.teachers.find(
-                      (t) => t.teacherId === teacher.teacherId
-                    )
+                      (t) => t.teacherId === teacher.teacherId,
+                    ),
                 )
                 .map((teacher) => (
                   <option key={teacher.teacherId} value={teacher.teacherId}>
@@ -439,7 +483,7 @@ const Subjects = () => {
               value={formData.description}
               onChange={handleInputChange}
               rows="3"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Enter subject description"
             />
           </div>
@@ -452,7 +496,7 @@ const Subjects = () => {
               value={formData.syllabus}
               onChange={handleInputChange}
               rows="3"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Enter syllabus details"
             />
           </div>
@@ -460,7 +504,7 @@ const Subjects = () => {
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-700"
             >
               Cancel
             </button>
@@ -472,8 +516,8 @@ const Subjects = () => {
               {createSubject.isLoading || updateSubject.isLoading
                 ? "Saving..."
                 : editingSubject
-                ? "Update Subject"
-                : "Create Subject"}
+                  ? "Update Subject"
+                  : "Create Subject"}
             </button>
           </div>
         </form>
@@ -488,8 +532,12 @@ const Subjects = () => {
           <Icon className="w-6 h-6" />
         </div>
         <div className="ml-4">
-          <p className="text-sm text-gray-600">{title}</p>
-          <p className="text-xl font-semibold text-gray-900">{value}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+            {title}
+          </p>
+          <p className="text-xl font-semibold text-gray-900 dark:text-white">
+            {value}
+          </p>
         </div>
       </div>
     </div>
@@ -509,14 +557,16 @@ const Subjects = () => {
         <div className="text-red-500 text-xl mb-4">
           <Icons.AlertTriangle className="w-8 h-8" />
         </div>
-        <p className="text-gray-600">Error loading subjects data</p>
+        <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
+          Error loading subjects data
+        </p>
       </div>
     );
   }
 
   // Get unique departments from subjects for stats
   const uniqueDepartments = new Set(
-    subjects.map((subject) => subject.department).filter(Boolean)
+    subjects.map((subject) => subject.department).filter(Boolean),
   ).size;
 
   return (
@@ -524,8 +574,10 @@ const Subjects = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Subjects</h1>
-          <p className="text-gray-600">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Subjects
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
             Manage school subjects and assignments
           </p>
         </div>
@@ -556,7 +608,7 @@ const Subjects = () => {
           title="Total Teachers"
           value={subjects.reduce(
             (sum, subject) => sum + (subject.teachers?.length || 0),
-            0
+            0,
           )}
           icon={Icons.Users}
           color="bg-orange-500"
@@ -575,13 +627,13 @@ const Subjects = () => {
           <div className="flex-1">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Icons.Search className="h-5 w-5 text-gray-400" />
+                <Icons.Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
               </div>
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="Search subjects, codes, or teachers..."
               />
             </div>
@@ -617,7 +669,7 @@ const Subjects = () => {
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             No subjects found
           </h3>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
             Try adjusting your search or filter criteria
           </p>
         </div>

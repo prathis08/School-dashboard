@@ -53,8 +53,8 @@ const Profile = () => {
 
   // Update tempData when profileData changes
   useEffect(() => {
-    if (profileData?.data?.user) {
-      const user = profileData.data.user;
+    if (profileData?.data) {
+      const user = profileData.data;
       const normalizedData = {
         name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
         email: user.email || "",
@@ -91,7 +91,9 @@ const Profile = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading profile...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400 dark:text-gray-500">
+            Loading profile...
+          </p>
         </div>
       </div>
     );
@@ -135,11 +137,13 @@ const Profile = () => {
   }
 
   // No profile data
-  if (!profileData?.data?.user) {
+  if (!profileData?.data) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <p className="text-gray-600">No profile data available</p>
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
+            No profile data available
+          </p>
         </div>
       </div>
     );
@@ -164,7 +168,19 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
-      await updateProfile.mutateAsync({ data: tempData });
+      // Split name into firstName and lastName for the backend
+      const nameParts = (tempData.name || "").trim().split(" ");
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+
+      // Prepare data for backend (only send firstName, lastName, email)
+      const updateData = {
+        firstName,
+        lastName,
+        email: tempData.email,
+      };
+
+      await updateProfile.mutateAsync({ data: updateData });
       setIsEditing(false);
       setSuccessMessage("Profile updated successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
@@ -175,8 +191,8 @@ const Profile = () => {
   };
 
   const handleCancel = () => {
-    if (profileData?.data?.user) {
-      const user = profileData.data.user;
+    if (profileData?.data) {
+      const user = profileData.data;
       const normalizedData = {
         name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
         email: user.email || "",
@@ -235,13 +251,13 @@ const Profile = () => {
           )}
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
             {tempData.name || "User"}
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
             {tempData.position || "Position not specified"}
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
             {tempData.department || "Department not specified"}
           </p>
           <div className="flex items-center mt-2 space-x-4">
@@ -255,7 +271,7 @@ const Profile = () => {
               {tempData.isActive ? "Active" : "Inactive"}
             </span>
             {tempData.userId && (
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                 ID: {tempData.userId}
               </span>
             )}
@@ -274,7 +290,7 @@ const Profile = () => {
               type="text"
               value={tempData.name}
               onChange={(e) => handleInputChange("name", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           ) : (
             <div className="flex items-center">
@@ -293,7 +309,7 @@ const Profile = () => {
               type="email"
               value={tempData.email}
               onChange={(e) => handleInputChange("email", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           ) : (
             <div className="flex items-center">
@@ -312,7 +328,7 @@ const Profile = () => {
               type="tel"
               value={tempData.phone}
               onChange={(e) => handleInputChange("phone", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           ) : (
             <div className="flex items-center">
@@ -331,7 +347,7 @@ const Profile = () => {
               type="date"
               value={tempData.dateOfBirth}
               onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           ) : (
             <div className="flex items-center">
@@ -356,7 +372,7 @@ const Profile = () => {
             value={tempData.address}
             onChange={(e) => handleInputChange("address", e.target.value)}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           />
         ) : (
           <div className="flex items-start">
@@ -389,11 +405,13 @@ const Profile = () => {
             value={tempData.bio}
             onChange={(e) => handleInputChange("bio", e.target.value)}
             rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             placeholder="Tell us about yourself..."
           />
         ) : (
-          <p className="text-gray-700">{tempData.bio || "No bio provided"}</p>
+          <p className="text-gray-700 dark:text-gray-300">
+            {tempData.bio || "No bio provided"}
+          </p>
         )}
       </div>
 
@@ -415,10 +433,10 @@ const Profile = () => {
                   handleNestedInputChange(
                     "emergencyContact",
                     "name",
-                    e.target.value
+                    e.target.value,
                   )
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             ) : (
               <span>{tempData.emergencyContact?.name || "Not provided"}</span>
@@ -436,10 +454,10 @@ const Profile = () => {
                   handleNestedInputChange(
                     "emergencyContact",
                     "relationship",
-                    e.target.value
+                    e.target.value,
                   )
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             ) : (
               <span>
@@ -459,10 +477,10 @@ const Profile = () => {
                   handleNestedInputChange(
                     "emergencyContact",
                     "phone",
-                    e.target.value
+                    e.target.value,
                   )
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             ) : (
               <span>{tempData.emergencyContact?.phone || "Not provided"}</span>
@@ -485,7 +503,7 @@ const Profile = () => {
               type="text"
               value={tempData.position}
               onChange={(e) => handleInputChange("position", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           ) : (
             <div className="flex items-center">
@@ -503,7 +521,7 @@ const Profile = () => {
             <select
               value={tempData.department}
               onChange={(e) => handleInputChange("department", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="">Select Department</option>
               <option value="Administration">Administration</option>
@@ -532,7 +550,7 @@ const Profile = () => {
               onChange={(e) =>
                 handleInputChange("qualification", e.target.value)
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           ) : (
             <div className="flex items-center">
@@ -551,7 +569,7 @@ const Profile = () => {
               type="text"
               value={tempData.experience}
               onChange={(e) => handleInputChange("experience", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           ) : (
             <div className="flex items-center">
@@ -570,7 +588,7 @@ const Profile = () => {
               type="date"
               value={tempData.joiningDate}
               onChange={(e) => handleInputChange("joiningDate", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           ) : (
             <div className="flex items-center">
@@ -600,7 +618,7 @@ const Profile = () => {
             </label>
             <input
               type="password"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Enter current password"
             />
           </div>
@@ -610,7 +628,7 @@ const Profile = () => {
             </label>
             <input
               type="password"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Enter new password"
             />
           </div>
@@ -620,7 +638,7 @@ const Profile = () => {
             </label>
             <input
               type="password"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Confirm new password"
             />
           </div>
@@ -637,10 +655,12 @@ const Profile = () => {
         </h3>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-gray-700">
+            <p className="text-gray-700 dark:text-gray-300">
               Add an extra layer of security to your account
             </p>
-            <p className="text-sm text-gray-500">Currently disabled</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+              Currently disabled
+            </p>
           </div>
           <button className="btn-primary">Enable 2FA</button>
         </div>
@@ -662,7 +682,9 @@ const Profile = () => {
             { label: "System maintenance", enabled: true },
           ].map((item, index) => (
             <div key={index} className="flex items-center justify-between">
-              <span className="text-gray-700">{item.label}</span>
+              <span className="text-gray-700 dark:text-gray-300">
+                {item.label}
+              </span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -687,7 +709,9 @@ const Profile = () => {
             { label: "Desktop notifications", enabled: true },
           ].map((item, index) => (
             <div key={index} className="flex items-center justify-between">
-              <span className="text-gray-700">{item.label}</span>
+              <span className="text-gray-700 dark:text-gray-300">
+                {item.label}
+              </span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -728,7 +752,9 @@ const Profile = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Profile
+          </h1>
           <p className="text-gray-600 mt-1">
             Manage your personal information and preferences
           </p>
@@ -764,7 +790,7 @@ const Profile = () => {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex space-x-8">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -775,7 +801,7 @@ const Profile = () => {
                 className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
                     ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:border-gray-600"
                 }`}
               >
                 <Icon className="w-5 h-5 mr-2" />

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Icons from "../../utils/icons";
 import { useTeachers, useDeleteTeacher } from "../../hooks/useApiHooks";
+import { useToast, useConfirm } from "../../context/UIProvider";
 
 const Teachers = () => {
   // Use TanStack Query hooks
@@ -12,6 +13,8 @@ const Teachers = () => {
   } = useTeachers();
   const deleteTeacher = useDeleteTeacher();
   const navigate = useNavigate();
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("All");
@@ -21,23 +24,15 @@ const Teachers = () => {
   const teachersData = Array.isArray(teachersResponse?.data?.teachers)
     ? teachersResponse.data.teachers
     : Array.isArray(teachersResponse?.data)
-    ? teachersResponse.data
-    : Array.isArray(teachersResponse)
-    ? teachersResponse
-    : [];
-
-  // Debug logging to see what data we're getting
-  console.log("Teachers Debug:", {
-    teachersResponse,
-    teachersData,
-    isArray: Array.isArray(teachersData),
-    length: teachersData.length,
-  });
+      ? teachersResponse.data
+      : Array.isArray(teachersResponse)
+        ? teachersResponse
+        : [];
 
   // Transform teachers data for component usage
   const transformedTeachers = teachersData.map((teacher) => ({
-    id: teacher.teacherId || teacher.id,
-    teacherId: teacher.teacherId || teacher.id,
+    id: teacher.teacherId,
+    teacherId: teacher.teacherId,
     name:
       `${teacher.personalInfo?.firstName || ""} ${
         teacher.personalInfo?.lastName || ""
@@ -60,14 +55,19 @@ const Teachers = () => {
 
   // Handle teacher deletion using TanStack Query mutation
   const handleDeleteTeacher = async (teacherId) => {
-    if (window.confirm("Are you sure you want to delete this teacher?")) {
-      try {
-        await deleteTeacher.mutateAsync({ id: teacherId });
-        // TanStack Query will automatically refetch and update the UI
-      } catch (err) {
-        console.error("Error deleting teacher:", err);
-        alert("Failed to delete teacher. Please try again.");
-      }
+    const ok = await confirm({
+      title: "Delete teacher?",
+      message: "Are you sure you want to delete this teacher?",
+      confirmLabel: "Delete",
+      tone: "danger",
+    });
+    if (!ok) return;
+    try {
+      await deleteTeacher.mutateAsync({ id: teacherId });
+      toast.success("Teacher deleted successfully");
+    } catch (err) {
+      console.error("Error deleting teacher:", err);
+      toast.error("Failed to delete teacher. Please try again.");
     }
   };
 
@@ -102,7 +102,9 @@ const Teachers = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Teachers</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Teachers
+            </h1>
             <p className="text-gray-600 mt-1">Manage your teaching staff</p>
           </div>
         </div>
@@ -110,7 +112,7 @@ const Teachers = () => {
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 p-6"
             >
               <div className="animate-pulse">
                 <div className="flex items-center space-x-3 mb-4">
@@ -139,7 +141,9 @@ const Teachers = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Teachers</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Teachers
+            </h1>
             <p className="text-gray-600 mt-1">Manage your teaching staff</p>
           </div>
         </div>
@@ -171,12 +175,12 @@ const Teachers = () => {
       case "Inactive":
         return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-gray-800 dark:text-gray-300";
     }
   };
 
   const TeacherCard = ({ teacher }) => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
@@ -184,13 +188,17 @@ const Teachers = () => {
               <Icons.User className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">{teacher.name}</h3>
-              <p className="text-sm text-gray-600">{teacher.department}</p>
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                {teacher.name}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+                {teacher.department}
+              </p>
             </div>
           </div>
           <span
             className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
-              teacher.status
+              teacher.status,
             )}`}
           >
             {teacher.status}
@@ -199,44 +207,56 @@ const Teachers = () => {
 
         <div className="space-y-2 mb-4">
           <div className="flex items-center space-x-2">
-            <Icons.Mail className="w-4 h-4 text-gray-400" />
-            <span className="text-sm text-gray-600">{teacher.email}</span>
+            <Icons.Mail className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+            <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+              {teacher.email}
+            </span>
           </div>
           <div className="flex items-center space-x-2">
-            <Icons.Phone className="w-4 h-4 text-gray-400" />
-            <span className="text-sm text-gray-600">{teacher.phone}</span>
+            <Icons.Phone className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+            <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+              {teacher.phone}
+            </span>
           </div>
           <div className="flex items-center space-x-2">
-            <Icons.BookOpen className="w-4 h-4 text-gray-400" />
-            <span className="text-sm text-gray-600">{teacher.subject}</span>
+            <Icons.BookOpen className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+            <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+              {teacher.subject}
+            </span>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4 py-3 border-t border-gray-100">
           <div className="text-center">
-            <p className="text-sm font-semibold text-gray-900">
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">
               {teacher.classes}
             </p>
-            <p className="text-xs text-gray-600">Classes</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500">
+              Classes
+            </p>
           </div>
           <div className="text-center">
-            <p className="text-sm font-semibold text-gray-900">
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">
               {teacher.students}
             </p>
-            <p className="text-xs text-gray-600">Students</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500">
+              Students
+            </p>
           </div>
           <div className="text-center">
-            <p className="text-sm font-semibold text-gray-900">
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">
               {teacher.experience} yrs
             </p>
-            <p className="text-xs text-gray-600">Experience</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500">
+              Experience
+            </p>
           </div>
         </div>
       </div>
 
       <div className="flex space-x-2 px-6 pb-6">
         <button
-          onClick={() => navigate(`/teachers/${teacher.id}`)}
+          onClick={() => navigate(`/teachers/${teacher.teacherId}`)}
           className="flex-1 bg-blue-50 text-blue-600 py-2 px-3 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
         >
           View Details
@@ -255,7 +275,9 @@ const Teachers = () => {
     <div className="stat-card">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500">
+            {title}
+          </p>
           <p className="text-2xl font-bold text-gray-900 mt-2">{value}</p>
         </div>
         <div className={`p-3 rounded-lg ${color}`}>
@@ -270,7 +292,9 @@ const Teachers = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Teachers</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Teachers
+          </h1>
           <p className="text-gray-600 mt-1">Manage your teaching staff</p>
         </div>
         <button
@@ -311,8 +335,8 @@ const Teachers = () => {
               ? Math.round(
                   transformedTeachers.reduce(
                     (sum, t) => sum + (t.experience || 0),
-                    0
-                  ) / transformedTeachers.length
+                    0,
+                  ) / transformedTeachers.length,
                 ).toString() + " yrs"
               : "0 yrs"
           }
@@ -322,20 +346,20 @@ const Teachers = () => {
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Search Teachers
             </label>
             <div className="relative">
-              <Icons.Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+              <Icons.Search className="w-4 h-4 absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search teachers..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
           </div>
@@ -346,7 +370,7 @@ const Teachers = () => {
             <select
               value={filterDepartment}
               onChange={(e) => setFilterDepartment(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               {departments.map((dept) => (
                 <option key={dept} value={dept}>
@@ -362,7 +386,7 @@ const Teachers = () => {
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               {statuses.map((status) => (
                 <option key={status} value={status}>
@@ -377,7 +401,7 @@ const Teachers = () => {
       {/* Teachers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredTeachers.map((teacher) => (
-          <TeacherCard key={teacher.id} teacher={teacher} />
+          <TeacherCard key={teacher.teacherId} teacher={teacher} />
         ))}
       </div>
 
@@ -388,7 +412,7 @@ const Teachers = () => {
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             No teachers found
           </h3>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
             Try adjusting your search or filter criteria
           </p>
         </div>

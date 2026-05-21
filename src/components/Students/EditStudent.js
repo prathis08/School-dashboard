@@ -16,7 +16,11 @@ import {
   Upload,
   Paperclip,
 } from "lucide-react";
-import { useStudent, useUpdateStudent } from "../../hooks/useApiHooks";
+import {
+  useStudent,
+  useUpdateStudent,
+  useTeacherNames,
+} from "../../hooks/useApiHooks";
 
 const EditStudent = () => {
   const navigate = useNavigate();
@@ -25,12 +29,15 @@ const EditStudent = () => {
   // Use TanStack Query hooks for API operations
   const { data: studentResponse, isLoading: loading, error } = useStudent(id);
   const updateStudent = useUpdateStudent();
+  const { data: teacherNamesResponse } = useTeacherNames();
+  const teacherList = Array.isArray(teacherNamesResponse?.data)
+    ? teacherNamesResponse.data
+    : Array.isArray(teacherNamesResponse)
+      ? teacherNamesResponse
+      : [];
 
   // Safely extract student data from response
-  const studentToEdit =
-    studentResponse?.data?.student ||
-    studentResponse?.student ||
-    studentResponse;
+  const studentToEdit = studentResponse?.data || studentResponse;
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -65,6 +72,11 @@ const EditStudent = () => {
     guardianEmail: "",
     guardianRelation: "",
     guardianAddress: "",
+    // Staff-ward (optional)
+    isStaffWard: false,
+    staffId: "",
+    staffName: "",
+    staffMemberRelation: "",
     // File attachments
     photo: null,
     birthCertificate: null,
@@ -77,44 +89,117 @@ const EditStudent = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Helper function to format date for input fields
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return "";
+    try {
+      const date = new Date(dateString);
+      return date.toISOString().split("T")[0];
+    } catch (error) {
+      return "";
+    }
+  };
+
   // Prefill form data when component mounts or student data changes
   useEffect(() => {
     if (studentToEdit) {
-      setFormData({
+      const newFormData = {
         firstName: studentToEdit.firstName || "",
         lastName: studentToEdit.lastName || "",
         email: studentToEdit.email || "",
         phone: studentToEdit.phone || "",
         grade: studentToEdit.grade || "",
-        class: studentToEdit.class || "",
+        class: studentToEdit.class?.className || studentToEdit.class || "",
         rollNumber: studentToEdit.rollNumber || "",
-        dateOfBirth: studentToEdit.dateOfBirth || "",
+        dateOfBirth: formatDateForInput(studentToEdit.dateOfBirth),
         address: studentToEdit.address
-          ? `${studentToEdit.address.street}, ${studentToEdit.address.city}, ${studentToEdit.address.state} ${studentToEdit.address.zipCode}`
+          ? typeof studentToEdit.address === "string"
+            ? studentToEdit.address
+            : `${studentToEdit.address.street || ""}, ${studentToEdit.address.city || ""}, ${studentToEdit.address.state || ""} ${studentToEdit.address.zipCode || ""}`.trim()
           : "",
-        admissionDate: studentToEdit.admissionDate || "",
+        admissionDate: formatDateForInput(studentToEdit.admissionDate),
         status: studentToEdit.status || "Active",
         subjects: studentToEdit.subjects?.toString() || "",
         // Previous school information
-        previousSchoolName: studentToEdit.previousSchool?.name || "",
-        previousSchoolLastGrade: studentToEdit.previousSchool?.lastGrade || "",
-        previousSchoolAddress: studentToEdit.previousSchool?.address || "",
-        previousSchoolBoard: studentToEdit.previousSchool?.board || "",
-        reasonForLeaving: studentToEdit.previousSchool?.reasonForLeaving || "",
+        previousSchoolName:
+          studentToEdit.previousSchoolDetails?.name ||
+          studentToEdit.previousSchool?.name ||
+          "",
+        previousSchoolLastGrade:
+          studentToEdit.previousSchoolDetails?.lastGrade ||
+          studentToEdit.previousSchool?.lastGrade ||
+          "",
+        previousSchoolAddress:
+          studentToEdit.previousSchoolDetails?.address ||
+          studentToEdit.previousSchool?.address ||
+          "",
+        previousSchoolBoard:
+          studentToEdit.previousSchoolDetails?.board ||
+          studentToEdit.previousSchool?.board ||
+          "",
+        reasonForLeaving:
+          studentToEdit.previousSchoolDetails?.reasonForLeaving ||
+          studentToEdit.previousSchool?.reasonForLeaving ||
+          "",
         // Parent/Guardian information
-        fatherName: studentToEdit.parentDetails?.fatherName || "",
-        fatherPhone: studentToEdit.parentDetails?.fatherPhone || "",
-        fatherEmail: studentToEdit.parentDetails?.fatherEmail || "",
-        fatherOccupation: studentToEdit.parentDetails?.fathersOccupation || "",
-        motherName: studentToEdit.parentDetails?.motherName || "",
-        motherPhone: studentToEdit.parentDetails?.motherPhone || "",
-        motherEmail: studentToEdit.parentDetails?.motherEmail || "",
-        motherOccupation: studentToEdit.parentDetails?.mothersOccupation || "",
-        guardianName: studentToEdit.guardianName || "",
-        guardianPhone: studentToEdit.guardianPhone || "",
-        guardianEmail: studentToEdit.guardianEmail || "",
-        guardianRelation: studentToEdit.guardianRelation || "",
-        guardianAddress: studentToEdit.guardianAddress || "",
+        fatherName:
+          studentToEdit.parentDetails?.father?.name ||
+          studentToEdit.parentDetails?.fatherName ||
+          studentToEdit.fatherName ||
+          "",
+        fatherPhone:
+          studentToEdit.parentDetails?.father?.phone ||
+          studentToEdit.parentDetails?.fatherPhone ||
+          "",
+        fatherEmail:
+          studentToEdit.parentDetails?.father?.email ||
+          studentToEdit.parentDetails?.fatherEmail ||
+          "",
+        fatherOccupation:
+          studentToEdit.parentDetails?.father?.occupation ||
+          studentToEdit.parentDetails?.fathersOccupation ||
+          "",
+        motherName:
+          studentToEdit.parentDetails?.mother?.name ||
+          studentToEdit.parentDetails?.motherName ||
+          "",
+        motherPhone:
+          studentToEdit.parentDetails?.mother?.phone ||
+          studentToEdit.parentDetails?.motherPhone ||
+          "",
+        motherEmail:
+          studentToEdit.parentDetails?.mother?.email ||
+          studentToEdit.parentDetails?.motherEmail ||
+          "",
+        motherOccupation:
+          studentToEdit.parentDetails?.mother?.occupation ||
+          studentToEdit.parentDetails?.mothersOccupation ||
+          "",
+        guardianName:
+          studentToEdit.guardianDetails?.name ||
+          studentToEdit.guardianName ||
+          "",
+        guardianPhone:
+          studentToEdit.guardianDetails?.phone ||
+          studentToEdit.guardianPhone ||
+          "",
+        guardianEmail:
+          studentToEdit.guardianDetails?.email ||
+          studentToEdit.guardianEmail ||
+          "",
+        guardianRelation:
+          studentToEdit.guardianDetails?.relation ||
+          studentToEdit.guardianRelation ||
+          "",
+        guardianAddress:
+          studentToEdit.guardianDetails?.address ||
+          studentToEdit.guardianAddress ||
+          "",
+        // Staff-ward
+        isStaffWard: Boolean(studentToEdit.staffRelation?.isStaffWard),
+        staffId: studentToEdit.staffRelation?.staffId || "",
+        staffName: studentToEdit.staffRelation?.staffName || "",
+        staffMemberRelation: studentToEdit.staffRelation?.relation || "",
         // File attachments - these would be handled differently in a real app
         photo: null,
         birthCertificate: null,
@@ -122,7 +207,9 @@ const EditStudent = () => {
         transferCertificate: null,
         medicalCertificate: null,
         otherDocuments: [],
-      });
+      };
+
+      setFormData(newFormData);
     }
   }, [studentToEdit]);
 
@@ -170,7 +257,9 @@ const EditStudent = () => {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading student details...</p>
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
+            Loading student details...
+          </p>
         </div>
       </div>
     );
@@ -253,9 +342,7 @@ const EditStudent = () => {
     if (!formData.email.trim()) newErrors.email = "Email is required";
     if (!formData.phone.trim()) newErrors.phone = "Phone is required";
     if (!formData.grade) newErrors.grade = "Grade is required";
-    if (!formData.class) newErrors.class = "Class is required";
-    if (!formData.rollNumber.trim())
-      newErrors.rollNumber = "Roll number is required";
+    // class and rollNumber are optional
     if (!formData.dateOfBirth)
       newErrors.dateOfBirth = "Date of birth is required";
     if (!formData.address.trim()) newErrors.address = "Address is required";
@@ -268,17 +355,15 @@ const EditStudent = () => {
       newErrors.email = "Please enter a valid email address";
     }
 
-    // Phone format validation (basic)
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-    if (formData.phone && !phoneRegex.test(formData.phone.replace(/\s/g, ""))) {
+    // Phone format validation (basic) - make it more lenient
+    const phoneRegex = /^\+?[\d\s\-()]+$/;
+    if (formData.phone && !phoneRegex.test(formData.phone)) {
       newErrors.phone = "Please enter a valid phone number";
     }
 
-    // Parent information validation
+    // Parent information validation - father's name is required, but phone/email are optional
     if (!formData.fatherName.trim())
       newErrors.fatherName = "Father's name is required";
-    if (!formData.fatherPhone.trim())
-      newErrors.fatherPhone = "Father's phone is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -337,6 +422,14 @@ const EditStudent = () => {
         guardianEmail: formData.guardianEmail,
         guardianRelation: formData.guardianRelation,
         guardianAddress: formData.guardianAddress,
+        staffRelation: formData.isStaffWard
+          ? {
+              isStaffWard: true,
+              staffId: formData.staffId || null,
+              staffName: formData.staffName || null,
+              relation: formData.staffMemberRelation || null,
+            }
+          : { isStaffWard: false },
       };
 
       // Use TanStack Query mutation
@@ -365,7 +458,9 @@ const EditStudent = () => {
     <div className="card">
       <div className="flex items-center mb-6">
         <Icon className="w-5 h-5 text-blue-600 mr-2" />
-        <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          {title}
+        </h2>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{children}</div>
     </div>
@@ -384,7 +479,7 @@ const EditStudent = () => {
     disabled = false,
   }) => (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-700">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {type === "select" ? (
@@ -394,7 +489,7 @@ const EditStudent = () => {
           onChange={onChange}
           disabled={disabled}
           className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            error ? "border-red-500" : "border-gray-300"
+            error ? "border-red-500" : "border-gray-300 dark:border-gray-600"
           } ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
         >
           <option value="">Select {label}</option>
@@ -413,7 +508,7 @@ const EditStudent = () => {
           disabled={disabled}
           rows={3}
           className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            error ? "border-red-500" : "border-gray-300"
+            error ? "border-red-500" : "border-gray-300 dark:border-gray-600"
           } ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
         />
       ) : (
@@ -425,7 +520,7 @@ const EditStudent = () => {
           placeholder={placeholder}
           disabled={disabled}
           className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            error ? "border-red-500" : "border-gray-300"
+            error ? "border-red-500" : "border-gray-300 dark:border-gray-600"
           } ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
         />
       )}
@@ -439,11 +534,15 @@ const EditStudent = () => {
 
   const FileUpload = ({ label, name, accept, onChange, file, onRemove }) => (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        {label}
+      </label>
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
         {file ? (
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">{file.name}</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+              {file.name}
+            </span>
             <button
               type="button"
               onClick={onRemove}
@@ -455,7 +554,7 @@ const EditStudent = () => {
         ) : (
           <div>
             <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
               Click to upload or drag and drop
             </p>
             <input
@@ -489,7 +588,9 @@ const EditStudent = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Edit Student</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Edit Student
+            </h1>
             <p className="text-gray-600 mt-1">
               Update information for{" "}
               {studentToEdit?.name ||
@@ -555,7 +656,6 @@ const EditStudent = () => {
             label="Status"
             name="status"
             type="select"
-            required
             value={formData.status}
             onChange={handleInputChange}
             error={errors.status}
@@ -579,7 +679,6 @@ const EditStudent = () => {
             label="Class"
             name="class"
             type="select"
-            required
             value={formData.class}
             onChange={handleInputChange}
             error={errors.class}
@@ -588,7 +687,6 @@ const EditStudent = () => {
           <InputField
             label="Roll Number"
             name="rollNumber"
-            required
             value={formData.rollNumber}
             onChange={handleInputChange}
             error={errors.rollNumber}
@@ -645,7 +743,6 @@ const EditStudent = () => {
             label="Father's Phone"
             name="fatherPhone"
             type="tel"
-            required
             value={formData.fatherPhone}
             onChange={handleInputChange}
             error={errors.fatherPhone}
@@ -752,11 +849,93 @@ const EditStudent = () => {
           </div>
         </FormSection>
 
+        {/* Staff-ward (optional) */}
+        <FormSection title="School Staff Relation (optional)" icon={Users}>
+          <div className="md:col-span-2">
+            <label className="inline-flex items-center cursor-pointer mb-3">
+              <input
+                type="checkbox"
+                checked={formData.isStaffWard}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    isStaffWard: e.target.checked,
+                    ...(e.target.checked
+                      ? {}
+                      : { staffId: "", staffName: "", staffMemberRelation: "" }),
+                  }))
+                }
+                className="w-5 h-5 text-blue-600 rounded mr-3"
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                This student is a ward of a teacher / staff member at this school
+              </span>
+            </label>
+          </div>
+          {formData.isStaffWard && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Staff Member
+                </label>
+                <select
+                  value={formData.staffId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    const teacher = teacherList.find((t) => t.teacherId === id);
+                    const fullName = teacher
+                      ? `${teacher.user?.firstName || ""} ${teacher.user?.lastName || ""}`.trim()
+                      : "";
+                    setFormData((prev) => ({
+                      ...prev,
+                      staffId: id,
+                      staffName: fullName,
+                    }));
+                  }}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="">Select teacher / staff</option>
+                  {teacherList.map((t) => (
+                    <option key={t.teacherId} value={t.teacherId}>
+                      {`${t.user?.firstName || ""} ${t.user?.lastName || ""}`.trim() ||
+                        t.teacherId}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Relation
+                </label>
+                <select
+                  value={formData.staffMemberRelation}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      staffMemberRelation: e.target.value,
+                    }))
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="">Select relation</option>
+                  <option value="Father">Father</option>
+                  <option value="Mother">Mother</option>
+                  <option value="Sibling">Sibling</option>
+                  <option value="Guardian">Guardian</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </>
+          )}
+        </FormSection>
+
         {/* File Attachments */}
         <div className="card">
           <div className="flex items-center mb-6">
             <FileText className="w-5 h-5 text-blue-600 mr-2" />
-            <h2 className="text-lg font-semibold text-gray-900">Documents</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Documents
+            </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FileUpload
@@ -812,7 +991,9 @@ const EditStudent = () => {
                   key={index}
                   className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
                 >
-                  <span className="text-sm text-gray-600">{doc.name}</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+                    {doc.name}
+                  </span>
                   <button
                     type="button"
                     onClick={() => removeFile("otherDocuments", index)}
@@ -833,7 +1014,7 @@ const EditStudent = () => {
         </div>
 
         {/* Submit Button */}
-        <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+        <div className="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
           <button
             type="button"
             onClick={() => navigate(`/students/${id}`)}

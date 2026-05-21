@@ -74,7 +74,7 @@ export const API_ENDPOINTS = {
     ASSIGN_TEACHER: (id) => `/subjects/assign-teacher-to-subject/${id}`,
   },
 
-  // Fees
+  // Fees (Legacy)
   FEES: {
     CREATE_STRUCTURE: "/fees/create-fee-structure",
     GET_STRUCTURES: "/fees/get-fee-structures",
@@ -83,6 +83,66 @@ export const API_ENDPOINTS = {
     RECORD_PAYMENT: "/fees/record-payment",
     PAYMENT_HISTORY: (studentId) => `/fees/get-payment-history/${studentId}`,
     GENERATE_REPORT: "/fees/generate-fee-report",
+  },
+
+  // Enhanced Fees - Unified Structure (all under /fees/)
+  ENHANCED_FEES: {
+    // Academic Year Management
+    ACADEMIC_YEARS: {
+      CREATE: "/fees/academic-years",
+      GET_ALL: "/fees/academic-years",
+      GET_ACTIVE: "/fees/academic-years/active",
+    },
+
+    // Fee Type Management
+    FEE_TYPES: {
+      CREATE: "/fees/fee-types",
+      GET_ALL: "/fees/fee-types",
+    },
+
+    // Class Fee Structure
+    CLASS_FEES: {
+      CREATE: "/fees/class-fees",
+      GET: (academicYearId, classId) =>
+        `/fees/class-fees/${academicYearId}/${classId}`,
+    },
+
+    // Installment Schedules
+    SCHEDULES: {
+      CREATE: "/fees/installment-schedules",
+      CREATE_QUARTERLY: (academicYearId, classId) =>
+        `/fees/installment-schedules/default-quarterly/${academicYearId}/${classId}`,
+    },
+
+    // Student Fee Management
+    STUDENT_FEES: {
+      ASSIGN: "/fees/student-assignments",
+      GET_ASSIGNMENT: (studentId, academicYearId) =>
+        `/fees/student-assignments/${studentId}/${academicYearId}`,
+      GET_SUMMARY: (studentId, academicYearId) =>
+        `/fees/students/${studentId}/${academicYearId}/summary`,
+      GET_INSTALLMENTS: (studentId, academicYearId) =>
+        `/fees/students/${studentId}/${academicYearId}/installments`,
+    },
+
+    // Payment Processing
+    PAYMENTS: {
+      RECORD: "/fees/payments",
+    },
+
+    // Reports & Analytics
+    REPORTS: {
+      OVERDUE: "/fees/reports/overdue",
+      COLLECTION: "/fees/reports/collection",
+      DASHBOARD_STATS: "/fees/dashboard/stats",
+    },
+
+    // Constants
+    CONSTANTS: {
+      PAYMENT_METHODS: "/fees/payment-methods",
+      SCHEDULE_TYPES: "/fees/constants/schedule-types",
+      INSTALLMENT_STATUSES: "/fees/constants/installment-statuses",
+    },
   },
 
   // System Health

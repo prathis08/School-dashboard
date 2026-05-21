@@ -6,6 +6,8 @@ import {
   Navigate,
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { DarkModeProvider } from "./context/DarkModeContext";
+import { UIProvider } from "./context/UIProvider";
 import Login from "./components/Auth/Login";
 import Dashboard from "./components/Dashboard/Dashboard";
 import Teachers from "./components/Teachers/Teachers";
@@ -19,7 +21,9 @@ import Classes from "./components/Classes/Classes";
 import Subjects from "./components/Subjects/Subjects";
 import SubjectDetail from "./components/Subjects/SubjectDetail";
 import Fees from "./components/Fees/Fees";
-import CreateFees from "./components/Fees/CreateFees";
+import FeeCreation from "./components/Fees/FeeCreation";
+import RecordPayment from "./components/Fees/RecordPayment";
+import PaymentHistory from "./components/Fees/PaymentHistory";
 import Profile from "./components/Profile/Profile";
 import Settings from "./components/Settings/Settings";
 import Layout from "./components/Layout/Layout";
@@ -48,48 +52,72 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <div className="App">
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<Login />} />
+    <DarkModeProvider>
+      <QueryClientProvider client={queryClient}>
+        <UIProvider>
+        <Router>
+          <div className="App">
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/login" element={<Login />} />
 
-            {/* Protected Routes */}
-            <Route
-              path="/*"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Routes>
-                      <Route path="/" element={<Navigate to="/dashboard" />} />
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/teachers" element={<Teachers />} />
-                      <Route path="/teachers/add" element={<AddTeacher />} />
-                      <Route path="/teachers/:id" element={<TeacherDetail />} />
-                      <Route path="/students" element={<Students />} />
-                      <Route path="/students/add" element={<AddStudent />} />
-                      <Route path="/students/:id" element={<StudentDetail />} />
-                      <Route
-                        path="/students/:id/edit"
-                        element={<EditStudent />}
-                      />
-                      <Route path="/classes" element={<Classes />} />
-                      <Route path="/subjects" element={<Subjects />} />
-                      <Route path="/subjects/:id" element={<SubjectDetail />} />
-                      <Route path="/fees" element={<Fees />} />
-                      <Route path="/fees/create" element={<CreateFees />} />
-                      <Route path="/profile" element={<Profile />} />
-                      <Route path="/settings" element={<Settings />} />
-                    </Routes>
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </div>
-      </Router>
-    </QueryClientProvider>
+              {/* Protected Routes */}
+              <Route
+                path="/*"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Routes>
+                        <Route
+                          path="/"
+                          element={<Navigate to="/dashboard" />}
+                        />
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/teachers" element={<Teachers />} />
+                        <Route path="/teachers/add" element={<AddTeacher />} />
+                        <Route
+                          path="/teachers/:id"
+                          element={<TeacherDetail />}
+                        />
+                        <Route path="/students" element={<Students />} />
+                        <Route path="/students/add" element={<AddStudent />} />
+                        <Route
+                          path="/students/:id"
+                          element={<StudentDetail />}
+                        />
+                        <Route
+                          path="/students/:id/edit"
+                          element={<EditStudent />}
+                        />
+                        <Route path="/classes" element={<Classes />} />
+                        <Route path="/subjects" element={<Subjects />} />
+                        <Route
+                          path="/subjects/:id"
+                          element={<SubjectDetail />}
+                        />
+                        <Route path="/fees" element={<Fees />} />
+                        <Route path="/fees/create" element={<FeeCreation />} />
+                        <Route
+                          path="/fees/payment/:studentId"
+                          element={<RecordPayment />}
+                        />
+                        <Route
+                          path="/fees/history/:studentId"
+                          element={<PaymentHistory />}
+                        />
+                        <Route path="/profile" element={<Profile />} />
+                        <Route path="/settings" element={<Settings />} />
+                      </Routes>
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </div>
+        </Router>
+        </UIProvider>
+      </QueryClientProvider>
+    </DarkModeProvider>
   );
 }
 

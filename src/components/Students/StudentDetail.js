@@ -20,7 +20,7 @@ const StudentDetail = () => {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             Loading Student Details...
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
             Please wait while we fetch the student information.
           </p>
         </div>
@@ -86,7 +86,7 @@ const StudentDetail = () => {
       case "Graduated":
         return "bg-blue-100 text-blue-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-gray-800 dark:text-gray-300";
     }
   };
 
@@ -101,7 +101,7 @@ const StudentDetail = () => {
       case "Grade 12":
         return "bg-green-100 text-green-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-gray-800 dark:text-gray-300";
     }
   };
 
@@ -125,7 +125,9 @@ const StudentDetail = () => {
     <div className="card">
       <div className="flex items-center mb-4">
         <Icon className="w-5 h-5 text-blue-600 mr-2" />
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          {title}
+        </h3>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{children}</div>
     </div>
@@ -135,7 +137,9 @@ const StudentDetail = () => {
     <div className="bg-gray-50 rounded-lg p-3">
       <div className="flex items-center mb-1">
         {Icon && <Icon className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />}
-        <dt className="text-sm font-medium text-gray-600">{label}</dt>
+        <dt className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500">
+          {label}
+        </dt>
       </div>
       <dd className="text-sm font-semibold text-gray-900 break-words ml-6">
         {value || "Not provided"}
@@ -155,7 +159,7 @@ const StudentDetail = () => {
             <Icons.ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               Student Details
             </h1>
             <p className="text-gray-600 mt-1">
@@ -188,39 +192,50 @@ const StudentDetail = () => {
               </span>
             </div>
             <div className="ml-6">
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {student.name}
               </h2>
-              <p className="text-lg text-gray-600">
-                Roll Number: {student.rollNumber || "Not assigned"}
+              <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
+                Student ID: {student.studentId}
               </p>
-              <p className="text-gray-600">Student ID: {student.studentId}</p>
-              <div className="flex items-center mt-2 space-x-3">
+              <div className="flex items-center mt-2 space-x-3 flex-wrap gap-y-2">
                 <span
                   className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(
-                    student.status
+                    student.status,
                   )}`}
                 >
                   {student.status}
                 </span>
                 <span
                   className={`px-3 py-1 text-sm font-medium rounded-full ${getGradeColor(
-                    student.grade
+                    student.grade,
                   )}`}
                 >
-                  {student.grade} - {student.classId || "N/A"}
+                  {student.class?.className || "N/A"}
                 </span>
+                {student.staffRelation?.isStaffWard && (
+                  <span
+                    className="px-3 py-1 text-sm font-medium rounded-full bg-amber-100 text-amber-800"
+                    title={`${student.staffRelation.relation || "Relation"}: ${student.staffRelation.staffName || student.staffRelation.staffId || ""}`}
+                  >
+                    Staff ward
+                    {student.staffRelation.staffName
+                      ? ` of ${student.staffRelation.staffName}`
+                      : ""}
+                    {student.staffRelation.relation
+                      ? ` (${student.staffRelation.relation})`
+                      : ""}
+                  </span>
+                )}
               </div>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-sm text-gray-500">Admitted on</p>
-            <p className="text-lg font-semibold text-gray-900">
-              {formatDate(student.admissionDate)}
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+              Admitted on
             </p>
-            <p className="text-sm text-gray-500 mt-2">Attendance</p>
-            <p className="text-lg font-semibold text-green-600">
-              {student.attendance?.length > 0 ? "95" : "0"}%
+            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+              {formatDate(student.admissionDate)}
             </p>
           </div>
         </div>
@@ -260,7 +275,7 @@ const StudentDetail = () => {
           />
           <InfoItem
             label="Class"
-            value={student.classId || "N/A"}
+            value={student.class?.className || "N/A"}
             icon={Icons.School}
           />
           <InfoItem
@@ -270,7 +285,7 @@ const StudentDetail = () => {
           />
           <InfoItem
             label="Section"
-            value={student.classId?.split(" - ")[1] || "N/A"}
+            value={student.class?.section || "N/A"}
             icon={Icons.BookOpen}
           />
           <InfoItem
@@ -389,7 +404,7 @@ const StudentDetail = () => {
       {/* Additional Information */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Attendance Details */}
-        {student.attendance && student.attendance.length >= 0 && (
+        {/* {student.attendance && student.attendance.length >= 0 && (
           <InfoCard title="Attendance Details" icon={Icons.Calendar}>
             <InfoItem
               label="Attendance Percentage"
@@ -403,10 +418,10 @@ const StudentDetail = () => {
             />
             <InfoItem label="Total Days" value="100" icon={Icons.Calendar} />
           </InfoCard>
-        )}
+        )} */}
 
         {/* Academic Performance */}
-        {student.grades && student.grades.length >= 0 && (
+        {/* {student.grades && student.grades.length >= 0 && (
           <InfoCard title="Academic Performance" icon={Icons.Award}>
             <InfoItem
               label="Current Performance"
@@ -420,7 +435,7 @@ const StudentDetail = () => {
             />
             <InfoItem label="Class Rank" value="N/A" icon={Icons.Award} />
           </InfoCard>
-        )}
+        )} */}
 
         {/* Previous School Details */}
         {student.previousSchoolDetails && (
@@ -456,7 +471,7 @@ const StudentDetail = () => {
         )}
 
         {/* Selected Subjects */}
-        {student.subjects && (
+        {/* {student.subjects && (
           <InfoCard title="Selected Subjects" icon={Icons.BookOpen}>
             <div className="md:col-span-2">
               <InfoItem
@@ -466,16 +481,137 @@ const StudentDetail = () => {
               />
             </div>
           </InfoCard>
-        )}
+        )} */}
+
+        {/* Uploaded Documents */}
+        <InfoCard title="Uploaded Documents" icon={Icons.FileText}>
+          {student.photo && (
+            <InfoItem
+              label="Student Photo"
+              value={
+                <a
+                  href={student.photo}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  View Photo
+                </a>
+              }
+              icon={Icons.Image}
+            />
+          )}
+          {student.birthCertificate && (
+            <InfoItem
+              label="Birth Certificate"
+              value={
+                <a
+                  href={student.birthCertificate}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  View Document
+                </a>
+              }
+              icon={Icons.FileText}
+            />
+          )}
+          {student.previousSchoolCertificate && (
+            <InfoItem
+              label="Previous School Certificate"
+              value={
+                <a
+                  href={student.previousSchoolCertificate}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  View Document
+                </a>
+              }
+              icon={Icons.FileText}
+            />
+          )}
+          {student.transferCertificate && (
+            <InfoItem
+              label="Transfer Certificate"
+              value={
+                <a
+                  href={student.transferCertificate}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  View Document
+                </a>
+              }
+              icon={Icons.FileText}
+            />
+          )}
+          {student.medicalCertificate && (
+            <InfoItem
+              label="Medical Certificate"
+              value={
+                <a
+                  href={student.medicalCertificate}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  View Document
+                </a>
+              }
+              icon={Icons.FileText}
+            />
+          )}
+          {student.otherDocuments && student.otherDocuments.length > 0 && (
+            <div className="md:col-span-2">
+              <InfoItem
+                label="Other Documents"
+                value={
+                  <div className="space-y-1">
+                    {student.otherDocuments.map((doc, index) => (
+                      <div key={index}>
+                        <a
+                          href={doc.url || doc}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline text-sm"
+                        >
+                          {doc.name || `Document ${index + 1}`}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                }
+                icon={Icons.FileText}
+              />
+            </div>
+          )}
+          {!student.photo &&
+            !student.birthCertificate &&
+            !student.previousSchoolCertificate &&
+            !student.transferCertificate &&
+            !student.medicalCertificate &&
+            (!student.otherDocuments ||
+              student.otherDocuments.length === 0) && (
+              <div className="md:col-span-2">
+                <p className="text-sm text-gray-500">No documents uploaded</p>
+              </div>
+            )}
+        </InfoCard>
       </div>
 
       {/* Quick Actions */}
       <div className="card">
         <div className="flex items-center mb-4">
           <Icons.Zap className="w-5 h-5 text-blue-600 mr-2" />
-          <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Quick Actions
+          </h3>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <button
             onClick={() => navigate(`/students/${id}/edit`)}
             className="flex flex-col items-center p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-200"
@@ -485,22 +621,22 @@ const StudentDetail = () => {
               Edit Details
             </span>
           </button>
-          <button className="flex flex-col items-center p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200">
-            <Icons.DollarSign className="w-6 h-6 text-green-600 mb-2" />
+          <button
+            onClick={() =>
+              navigate("/fees", {
+                state: {
+                  prefilledStudent: {
+                    studentId: student.studentId,
+                    name: student.name,
+                  },
+                },
+              })
+            }
+            className="flex flex-col items-center p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200"
+          >
+            <Icons.IndianRupee className="w-6 h-6 text-green-600 mb-2" />
             <span className="text-sm font-medium text-green-600">
               View Fees
-            </span>
-          </button>
-          <button className="flex flex-col items-center p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors duration-200">
-            <Icons.BarChart className="w-6 h-6 text-purple-600 mb-2" />
-            <span className="text-sm font-medium text-purple-600">
-              View Reports
-            </span>
-          </button>
-          <button className="flex flex-col items-center p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors duration-200">
-            <Icons.MessageCircle className="w-6 h-6 text-orange-600 mb-2" />
-            <span className="text-sm font-medium text-orange-600">
-              Send Message
             </span>
           </button>
         </div>

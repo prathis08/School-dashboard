@@ -1,14 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Settings as SettingsIcon,
   School,
-  Users,
-  DollarSign,
   Bell,
   Shield,
   Database,
   Palette,
-  Globe,
   Save,
   RefreshCw,
   Download,
@@ -16,26 +12,115 @@ import {
   Trash2,
   AlertTriangle,
 } from "lucide-react";
+import {
+  useSchoolSettings,
+  useUpdateSchoolSettings,
+  useAppearanceSettings,
+  useUpdateAppearanceSettings,
+} from "../../hooks/useApiHooks";
+import AcademicYearManagement from "../Fees/Enhanced/AcademicYearManagement";
+
+const flattenAddress = (address) => {
+  if (!address) return "";
+  if (typeof address === "string") return address;
+  if (address.street) return address.street;
+  return "";
+};
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("general");
-  const [settings, setSettings] = useState({
-    general: {
-      schoolName: "SchoolHub Academy",
-      schoolAddress: "123 Education Street, Academic City, AC 12345",
-      schoolPhone: "+1 (555) 123-4567",
-      schoolEmail: "contact@schoolhub.com",
-      schoolWebsite: "www.schoolhub.com",
-      timeZone: "America/New_York",
-      academicYear: "2024-2025",
-      currency: "USD",
-    },
-    appearance: {
-      theme: "light",
-      primaryColor: "#3B82F6",
-      sidebarStyle: "expanded",
-      language: "en",
-    },
+  const [statusMessage, setStatusMessage] = useState(null);
+
+  // General (school info)
+  const { data: schoolResponse, isLoading: schoolLoading } =
+    useSchoolSettings();
+  const updateSchool = useUpdateSchoolSettings();
+  const [schoolForm, setSchoolForm] = useState({
+    schoolName: "",
+    phone: "",
+    email: "",
+    website: "",
+    address: "",
+  });
+
+  useEffect(() => {
+    const school = schoolResponse?.data;
+    if (school) {
+      setSchoolForm({
+        schoolName: school.schoolName || "",
+        phone: school.phone || "",
+        email: school.email || "",
+        website: school.website || "",
+        address: flattenAddress(school.address),
+      });
+    }
+  }, [schoolResponse]);
+
+  const handleSchoolChange = (field, value) => {
+    setSchoolForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveSchool = async () => {
+    try {
+      await updateSchool.mutateAsync({
+        data: {
+          schoolName: schoolForm.schoolName,
+          phone: schoolForm.phone || undefined,
+          email: schoolForm.email || undefined,
+          website: schoolForm.website || undefined,
+          address: { street: schoolForm.address },
+        },
+      });
+      setStatusMessage({ type: "success", text: "School info saved" });
+    } catch (err) {
+      setStatusMessage({
+        type: "error",
+        text: err?.message || "Failed to save school info",
+      });
+    }
+  };
+
+  // Appearance (per-user prefs)
+  const { data: prefsResponse, isLoading: prefsLoading } =
+    useAppearanceSettings();
+  const updatePrefs = useUpdateAppearanceSettings();
+  const [appearanceForm, setAppearanceForm] = useState({
+    theme: "light",
+    primaryColor: "#3B82F6",
+    sidebarStyle: "expanded",
+    language: "en",
+  });
+
+  useEffect(() => {
+    const prefs = prefsResponse?.data;
+    if (prefs) {
+      setAppearanceForm({
+        theme: prefs.theme || "light",
+        primaryColor: prefs.primaryColor || "#3B82F6",
+        sidebarStyle: prefs.sidebarStyle || "expanded",
+        language: prefs.language || "en",
+      });
+    }
+  }, [prefsResponse]);
+
+  const handleAppearanceChange = (field, value) => {
+    setAppearanceForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveAppearance = async () => {
+    try {
+      await updatePrefs.mutateAsync({ data: appearanceForm });
+      setStatusMessage({ type: "success", text: "Preferences saved" });
+    } catch (err) {
+      setStatusMessage({
+        type: "error",
+        text: err?.message || "Failed to save preferences",
+      });
+    }
+  };
+
+  // Notifications / Security / System — kept hardcoded (UI state only)
+  const [staticSettings, setStaticSettings] = useState({
     notifications: {
       emailNotifications: true,
       pushNotifications: true,
@@ -59,6 +144,13 @@ const Settings = () => {
     },
   });
 
+  const handleStaticChange = (category, setting, value) => {
+    setStaticSettings((prev) => ({
+      ...prev,
+      [category]: { ...prev[category], [setting]: value },
+    }));
+  };
+
   const tabs = [
     { id: "general", label: "General", icon: School },
     { id: "appearance", label: "Appearance", icon: Palette },
@@ -67,15 +159,12 @@ const Settings = () => {
     { id: "system", label: "System", icon: Database },
   ];
 
-  const handleSettingChange = (category, setting, value) => {
-    setSettings((prev) => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [setting]: value,
-      },
-    }));
-  };
+  // Dismiss status message after a few seconds
+  useEffect(() => {
+    if (!statusMessage) return;
+    const t = setTimeout(() => setStatusMessage(null), 3000);
+    return () => clearTimeout(t);
+  }, [statusMessage]);
 
   const GeneralTab = () => (
     <div className="space-y-6">
@@ -83,129 +172,82 @@ const Settings = () => {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           School Information
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              School Name
-            </label>
-            <input
-              type="text"
-              value={settings.general.schoolName}
-              onChange={(e) =>
-                handleSettingChange("general", "schoolName", e.target.value)
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+        {schoolLoading ? (
+          <p className="text-gray-600">Loading school…</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                School Name
+              </label>
+              <input
+                type="text"
+                value={schoolForm.schoolName}
+                onChange={(e) =>
+                  handleSchoolChange("schoolName", e.target.value)
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                value={schoolForm.phone}
+                onChange={(e) => handleSchoolChange("phone", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <input
+                type="email"
+                value={schoolForm.email}
+                onChange={(e) => handleSchoolChange("email", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Website
+              </label>
+              <input
+                type="url"
+                value={schoolForm.website}
+                onChange={(e) => handleSchoolChange("website", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Address
+              </label>
+              <textarea
+                value={schoolForm.address}
+                onChange={(e) => handleSchoolChange("address", e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            <div className="md:col-span-2 flex justify-end">
+              <button
+                onClick={handleSaveSchool}
+                disabled={updateSchool.isPending}
+                className="btn-primary flex items-center disabled:opacity-50"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {updateSchool.isPending ? "Saving…" : "Save School Info"}
+              </button>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              value={settings.general.schoolPhone}
-              onChange={(e) =>
-                handleSettingChange("general", "schoolPhone", e.target.value)
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
-            </label>
-            <input
-              type="email"
-              value={settings.general.schoolEmail}
-              onChange={(e) =>
-                handleSettingChange("general", "schoolEmail", e.target.value)
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Website
-            </label>
-            <input
-              type="url"
-              value={settings.general.schoolWebsite}
-              onChange={(e) =>
-                handleSettingChange("general", "schoolWebsite", e.target.value)
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Address
-            </label>
-            <textarea
-              value={settings.general.schoolAddress}
-              onChange={(e) =>
-                handleSettingChange("general", "schoolAddress", e.target.value)
-              }
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-        </div>
+        )}
       </div>
 
-      <div className="card">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Regional Settings
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Time Zone
-            </label>
-            <select
-              value={settings.general.timeZone}
-              onChange={(e) =>
-                handleSettingChange("general", "timeZone", e.target.value)
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="America/New_York">Eastern Time</option>
-              <option value="America/Chicago">Central Time</option>
-              <option value="America/Denver">Mountain Time</option>
-              <option value="America/Los_Angeles">Pacific Time</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Academic Year
-            </label>
-            <input
-              type="text"
-              value={settings.general.academicYear}
-              onChange={(e) =>
-                handleSettingChange("general", "academicYear", e.target.value)
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Currency
-            </label>
-            <select
-              value={settings.general.currency}
-              onChange={(e) =>
-                handleSettingChange("general", "currency", e.target.value)
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="USD">USD - US Dollar</option>
-              <option value="EUR">EUR - Euro</option>
-              <option value="GBP">GBP - British Pound</option>
-              <option value="CAD">CAD - Canadian Dollar</option>
-            </select>
-          </div>
-        </div>
-      </div>
+      <AcademicYearManagement />
     </div>
   );
 
@@ -215,70 +257,66 @@ const Settings = () => {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Theme Settings
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Theme
-            </label>
-            <div className="space-y-2">
-              {[
-                { value: "light", label: "Light Theme" },
-                { value: "dark", label: "Dark Theme" },
-                { value: "auto", label: "Auto (System)" },
-              ].map((theme) => (
-                <label
-                  key={theme.value}
-                  className="flex items-center cursor-pointer"
-                >
-                  <input
-                    type="radio"
-                    name="theme"
-                    value={theme.value}
-                    checked={settings.appearance.theme === theme.value}
-                    onChange={(e) =>
-                      handleSettingChange("appearance", "theme", e.target.value)
-                    }
-                    className="text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">
-                    {theme.label}
-                  </span>
-                </label>
-              ))}
+        {prefsLoading ? (
+          <p className="text-gray-600">Loading preferences…</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Theme
+              </label>
+              <div className="space-y-2">
+                {[
+                  { value: "light", label: "Light Theme" },
+                  { value: "dark", label: "Dark Theme" },
+                  { value: "auto", label: "Auto (System)" },
+                ].map((theme) => (
+                  <label
+                    key={theme.value}
+                    className="flex items-center cursor-pointer"
+                  >
+                    <input
+                      type="radio"
+                      name="theme"
+                      value={theme.value}
+                      checked={appearanceForm.theme === theme.value}
+                      onChange={(e) =>
+                        handleAppearanceChange("theme", e.target.value)
+                      }
+                      className="text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600"
+                    />
+                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                      {theme.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Primary Color
+              </label>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="color"
+                  value={appearanceForm.primaryColor}
+                  onChange={(e) =>
+                    handleAppearanceChange("primaryColor", e.target.value)
+                  }
+                  className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={appearanceForm.primaryColor}
+                  onChange={(e) =>
+                    handleAppearanceChange("primaryColor", e.target.value)
+                  }
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Primary Color
-            </label>
-            <div className="flex items-center space-x-3">
-              <input
-                type="color"
-                value={settings.appearance.primaryColor}
-                onChange={(e) =>
-                  handleSettingChange(
-                    "appearance",
-                    "primaryColor",
-                    e.target.value
-                  )
-                }
-                className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
-              />
-              <input
-                type="text"
-                value={settings.appearance.primaryColor}
-                onChange={(e) =>
-                  handleSettingChange(
-                    "appearance",
-                    "primaryColor",
-                    e.target.value
-                  )
-                }
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       <div className="card">
@@ -291,15 +329,11 @@ const Settings = () => {
               Sidebar Style
             </label>
             <select
-              value={settings.appearance.sidebarStyle}
+              value={appearanceForm.sidebarStyle}
               onChange={(e) =>
-                handleSettingChange(
-                  "appearance",
-                  "sidebarStyle",
-                  e.target.value
-                )
+                handleAppearanceChange("sidebarStyle", e.target.value)
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="expanded">Expanded</option>
               <option value="collapsed">Collapsed</option>
@@ -311,11 +345,11 @@ const Settings = () => {
               Language
             </label>
             <select
-              value={settings.appearance.language}
+              value={appearanceForm.language}
               onChange={(e) =>
-                handleSettingChange("appearance", "language", e.target.value)
+                handleAppearanceChange("language", e.target.value)
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="en">English</option>
               <option value="es">Spanish</option>
@@ -324,6 +358,17 @@ const Settings = () => {
             </select>
           </div>
         </div>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={handleSaveAppearance}
+          disabled={updatePrefs.isPending}
+          className="btn-primary flex items-center disabled:opacity-50"
+        >
+          <Save className="w-4 h-4 mr-2" />
+          {updatePrefs.isPending ? "Saving…" : "Save Preferences"}
+        </button>
       </div>
     </div>
   );
@@ -367,22 +412,22 @@ const Settings = () => {
               className="flex items-center justify-between py-3 border-b border-gray-200 last:border-b-0"
             >
               <div>
-                <h4 className="text-sm font-medium text-gray-900">
+                <h4 className="text-sm font-medium text-gray-900 dark:text-white">
                   {notification.label}
                 </h4>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   {notification.description}
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={settings.notifications[notification.key]}
+                  checked={staticSettings.notifications[notification.key]}
                   onChange={(e) =>
-                    handleSettingChange(
+                    handleStaticChange(
                       "notifications",
                       notification.key,
-                      e.target.checked
+                      e.target.checked,
                     )
                   }
                   className="sr-only peer"
@@ -409,15 +454,15 @@ const Settings = () => {
             </label>
             <input
               type="number"
-              value={settings.security.passwordExpiry}
+              value={staticSettings.security.passwordExpiry}
               onChange={(e) =>
-                handleSettingChange(
+                handleStaticChange(
                   "security",
                   "passwordExpiry",
-                  parseInt(e.target.value)
+                  parseInt(e.target.value),
                 )
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
           <div>
@@ -426,15 +471,15 @@ const Settings = () => {
             </label>
             <input
               type="number"
-              value={settings.security.maxLoginAttempts}
+              value={staticSettings.security.maxLoginAttempts}
               onChange={(e) =>
-                handleSettingChange(
+                handleStaticChange(
                   "security",
                   "maxLoginAttempts",
-                  parseInt(e.target.value)
+                  parseInt(e.target.value),
                 )
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
           <div>
@@ -443,32 +488,32 @@ const Settings = () => {
             </label>
             <input
               type="number"
-              value={settings.security.sessionTimeout}
+              value={staticSettings.security.sessionTimeout}
               onChange={(e) =>
-                handleSettingChange(
+                handleStaticChange(
                   "security",
                   "sessionTimeout",
-                  parseInt(e.target.value)
+                  parseInt(e.target.value),
                 )
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
           <div className="flex items-center">
             <label className="flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={settings.security.twoFactorAuth}
+                checked={staticSettings.security.twoFactorAuth}
                 onChange={(e) =>
-                  handleSettingChange(
+                  handleStaticChange(
                     "security",
                     "twoFactorAuth",
-                    e.target.checked
+                    e.target.checked,
                   )
                 }
                 className="text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
-              <span className="ml-2 text-sm text-gray-700">
+              <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
                 Require Two-Factor Authentication
               </span>
             </label>
@@ -485,12 +530,12 @@ const Settings = () => {
             Allowed IP Addresses
           </label>
           <textarea
-            value={settings.security.ipWhitelist}
+            value={staticSettings.security.ipWhitelist}
             onChange={(e) =>
-              handleSettingChange("security", "ipWhitelist", e.target.value)
+              handleStaticChange("security", "ipWhitelist", e.target.value)
             }
             rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             placeholder="Enter IP addresses or ranges, one per line"
           />
           <p className="text-sm text-gray-500 mt-2">
@@ -508,24 +553,24 @@ const Settings = () => {
           System Controls
         </h3>
         <div className="space-y-4">
-          <div className="flex items-center justify-between py-3 border-b border-gray-200">
+          <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
             <div>
-              <h4 className="text-sm font-medium text-gray-900">
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white">
                 Maintenance Mode
               </h4>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                 Put the system in maintenance mode
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={settings.system.maintenanceMode}
+                checked={staticSettings.system.maintenanceMode}
                 onChange={(e) =>
-                  handleSettingChange(
+                  handleStaticChange(
                     "system",
                     "maintenanceMode",
-                    e.target.checked
+                    e.target.checked,
                   )
                 }
                 className="sr-only peer"
@@ -533,17 +578,21 @@ const Settings = () => {
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
-          <div className="flex items-center justify-between py-3 border-b border-gray-200">
+          <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
             <div>
-              <h4 className="text-sm font-medium text-gray-900">Debug Mode</h4>
-              <p className="text-sm text-gray-500">Enable debug logging</p>
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                Debug Mode
+              </h4>
+              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                Enable debug logging
+              </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={settings.system.debugMode}
+                checked={staticSettings.system.debugMode}
                 onChange={(e) =>
-                  handleSettingChange("system", "debugMode", e.target.checked)
+                  handleStaticChange("system", "debugMode", e.target.checked)
                 }
                 className="sr-only peer"
               />
@@ -552,15 +601,19 @@ const Settings = () => {
           </div>
           <div className="flex items-center justify-between py-3">
             <div>
-              <h4 className="text-sm font-medium text-gray-900">Auto Backup</h4>
-              <p className="text-sm text-gray-500">Automatically backup data</p>
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                Auto Backup
+              </h4>
+              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                Automatically backup data
+              </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={settings.system.autoBackup}
+                checked={staticSettings.system.autoBackup}
                 onChange={(e) =>
-                  handleSettingChange("system", "autoBackup", e.target.checked)
+                  handleStaticChange("system", "autoBackup", e.target.checked)
                 }
                 className="sr-only peer"
               />
@@ -580,11 +633,11 @@ const Settings = () => {
               Backup Frequency
             </label>
             <select
-              value={settings.system.backupFrequency}
+              value={staticSettings.system.backupFrequency}
               onChange={(e) =>
-                handleSettingChange("system", "backupFrequency", e.target.value)
+                handleStaticChange("system", "backupFrequency", e.target.value)
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
@@ -597,15 +650,15 @@ const Settings = () => {
             </label>
             <input
               type="number"
-              value={settings.system.dataRetention}
+              value={staticSettings.system.dataRetention}
               onChange={(e) =>
-                handleSettingChange(
+                handleStaticChange(
                   "system",
                   "dataRetention",
-                  parseInt(e.target.value)
+                  parseInt(e.target.value),
                 )
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
         </div>
@@ -664,19 +717,29 @@ const Settings = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Settings
+          </h1>
           <p className="text-gray-600 mt-1">
             Manage your application settings and preferences
           </p>
         </div>
-        <button className="btn-primary flex items-center">
-          <Save className="w-4 h-4 mr-2" />
-          Save All Changes
-        </button>
       </div>
 
+      {statusMessage && (
+        <div
+          className={`px-4 py-3 rounded-lg text-sm ${
+            statusMessage.type === "success"
+              ? "bg-green-50 border border-green-200 text-green-800"
+              : "bg-red-50 border border-red-200 text-red-800"
+          }`}
+        >
+          {statusMessage.text}
+        </div>
+      )}
+
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex space-x-8">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -687,7 +750,7 @@ const Settings = () => {
                 className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
                     ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:border-gray-600"
                 }`}
               >
                 <Icon className="w-5 h-5 mr-2" />
@@ -699,11 +762,11 @@ const Settings = () => {
       </div>
 
       {/* Tab Content */}
-      {activeTab === "general" && <GeneralTab />}
-      {activeTab === "appearance" && <AppearanceTab />}
-      {activeTab === "notifications" && <NotificationsTab />}
-      {activeTab === "security" && <SecurityTab />}
-      {activeTab === "system" && <SystemTab />}
+      {activeTab === "general" && GeneralTab()}
+      {activeTab === "appearance" && AppearanceTab()}
+      {activeTab === "notifications" && NotificationsTab()}
+      {activeTab === "security" && SecurityTab()}
+      {activeTab === "system" && SystemTab()}
     </div>
   );
 };

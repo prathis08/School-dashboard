@@ -20,7 +20,7 @@ import {
   LogOut,
   Bell,
   User,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   Activity,
   Clock,
@@ -113,6 +113,8 @@ import {
   Printer,
   Zap,
   School,
+  Moon,
+  Sun,
 } from "lucide-react";
 
 // Export all icons from a single source
@@ -192,7 +194,7 @@ export const Icons = {
   Database,
 
   // Finance
-  DollarSign,
+  IndianRupee,
   CreditCard,
   ShoppingCart,
   Briefcase,
@@ -263,6 +265,10 @@ export const Icons = {
   // Navigation helpers
   SkipBack,
   SkipForward,
+
+  // Theme
+  Moon,
+  Sun,
 };
 
 // Helper function to get icon by name (optional)
@@ -292,7 +298,7 @@ export {
   LogOut,
   Bell,
   User,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   Activity,
   Clock,

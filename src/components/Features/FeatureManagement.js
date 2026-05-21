@@ -8,6 +8,7 @@ import {
   useDashboardConfig,
 } from "../../hooks/useApiHooks";
 import { API_ENDPOINTS } from "../../services/api";
+import { useToast } from "../../context/UIProvider";
 import {
   Settings,
   ToggleLeft,
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 
 const FeatureManagement = () => {
+  const toast = useToast();
   const [selectedSchool, setSelectedSchool] = useState("");
   const [schoolFeaturesState, setSchoolFeaturesState] = useState({});
 
@@ -78,11 +80,11 @@ const FeatureManagement = () => {
       { schoolId: selectedSchool, enabledFeatures },
       {
         onSuccess: () => {
-          alert("Features updated successfully!");
+          toast.success("Features updated successfully!");
         },
         onError: (err) => {
           console.error("Error updating features:", err);
-          alert("Failed to update features. Please try again.");
+          toast.error("Failed to update features. Please try again.");
         },
       }
     );
@@ -91,11 +93,11 @@ const FeatureManagement = () => {
   const handleReloadConfig = async () => {
     reloadConfigMutation.mutate(undefined, {
       onSuccess: () => {
-        alert("Configuration reloaded successfully!");
+        toast.success("Configuration reloaded successfully!");
       },
       onError: (err) => {
         console.error("Error reloading config:", err);
-        alert("Failed to reload configuration.");
+        toast.error("Failed to reload configuration.");
       },
     });
   };
@@ -116,7 +118,7 @@ const FeatureManagement = () => {
           className={`ml-4 p-1 rounded-full transition-colors ${
             enabled
               ? "text-blue-600 hover:text-blue-800"
-              : "text-gray-400 hover:text-gray-600"
+              : "text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500"
           }`}
         >
           {enabled ? (
@@ -178,7 +180,7 @@ const FeatureManagement = () => {
           School Selection
         </h2>
         <div className="flex items-center space-x-4">
-          <School className="w-5 h-5 text-gray-400" />
+          <School className="w-5 h-5 text-gray-400 dark:text-gray-500" />
           <select
             value={selectedSchool}
             onChange={(e) => handleSchoolChange(e.target.value)}
@@ -228,7 +230,7 @@ const FeatureManagement = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Object.entries(dashboardConfig).map(([key, value]) => (
               <div key={key} className="bg-gray-50 rounded-lg p-3">
-                <p className="text-sm font-medium text-gray-600">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500">
                   {key
                     .replace(/([A-Z])/g, " $1")
                     .replace(/^./, (str) => str.toUpperCase())}

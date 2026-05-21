@@ -53,11 +53,23 @@ const apiClient = async (endpoint, options = {}) => {
 
 // Custom hook for GET requests (queries)
 export const useApiQuery = (key, endpoint, options = {}) => {
-  return useQuery({
+  // Ensure enabled is always a boolean for TanStack Query v5
+  const queryOptions = {
     queryKey: Array.isArray(key) ? key : [key],
     queryFn: () => apiClient(endpoint, { method: "GET" }),
     ...options,
-  });
+  };
+
+  // Force enabled to be a boolean if it exists
+  if (
+    "enabled" in queryOptions &&
+    typeof queryOptions.enabled !== "boolean" &&
+    typeof queryOptions.enabled !== "function"
+  ) {
+    queryOptions.enabled = Boolean(queryOptions.enabled);
+  }
+
+  return useQuery(queryOptions);
 };
 
 // Custom hook for POST/PUT/PATCH/DELETE requests (mutations)
@@ -140,6 +152,10 @@ export const QUERY_KEYS = {
   PROFILE: "profile",
   ACTIVE_SESSIONS: "activeSessions",
 
+  // Settings
+  SETTINGS_SCHOOL: "settingsSchool",
+  SETTINGS_PREFERENCES: "settingsPreferences",
+
   // Dashboard
   DASHBOARD_STATS: "dashboardStats",
   RECENT_ACTIVITY: "recentActivity",
@@ -163,6 +179,7 @@ export const QUERY_KEYS = {
   STUDENTS_WITH_FEES: "studentsWithFees",
   STUDENT_DETAIL: "studentDetail",
   STUDENT_GRADES: "studentGrades",
+  STUDENT_STATUS_OPTIONS: "studentStatusOptions",
   STUDENT_ATTENDANCE: "studentAttendance",
   STUDENT_PERFORMANCE: "studentPerformance",
 
@@ -182,6 +199,29 @@ export const QUERY_KEYS = {
   ACADEMIC_SESSIONS: "academicSessions",
   PAYMENT_HISTORY: "paymentHistory",
   FEE_REPORT: "feeReport",
+
+  // Enhanced Fees
+  ENHANCED_ACADEMIC_YEARS: "enhancedAcademicYears",
+  ENHANCED_ACTIVE_YEAR: "enhancedActiveYear",
+  ENHANCED_FEE_TYPES: "enhancedFeeTypes",
+  ENHANCED_CLASS_FEES: "enhancedClassFees",
+  ENHANCED_SCHEDULES: "enhancedSchedules",
+  ENHANCED_GRADE_FEES: "enhancedGradeFees",
+  ENHANCED_STUDENT_ASSIGNMENT: "enhancedStudentAssignment",
+  ENHANCED_STUDENT_SUMMARY: "enhancedStudentSummary",
+  ENHANCED_STUDENT_INSTALLMENTS: "enhancedStudentInstallments",
+  ENHANCED_OVERDUE_REPORT: "enhancedOverdueReport",
+  ENHANCED_COLLECTION_REPORT: "enhancedCollectionReport",
+  ENHANCED_DASHBOARD_STATS: "enhancedDashboardStats",
+
+  // Individual Student Fees
+  INDIVIDUAL_FEES: "individualFees",
+  STUDENT_INDIVIDUAL_FEES: "studentIndividualFees",
+
+  // Constants
+  PAYMENT_METHODS: "paymentMethods",
+  SCHEDULE_TYPES: "scheduleTypes",
+  INSTALLMENT_STATUSES: "installmentStatuses",
 
   // System
   SYSTEM_HEALTH: "systemHealth",

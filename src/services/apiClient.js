@@ -1,6 +1,7 @@
 import { getAuthToken, removeAuthToken } from "../utils/cookies";
 import { clearDashboardConfig } from "../utils/dashboardConfig";
 import { getApiBaseUrl } from "../utils/apiConfig";
+export { getApiBaseUrl };
 // API Endpoints (imported from api.js for backward compatibility)
 import { API_ENDPOINTS } from "./api";
 
@@ -129,15 +130,30 @@ export const dashboardApi = {
 
 // Student API functions
 export const studentsApi = {
-  getAll: () => api.get("/students/get-all-students"),
+  getAll: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.gradeId) query.set("gradeId", params.gradeId);
+    if (params.page) query.set("page", params.page);
+    if (params.limit) query.set("limit", params.limit);
+    const qs = query.toString();
+    return api.get(
+      `/students/get-all-students${qs ? `?${qs}` : ""}`,
+    );
+  },
   getById: (id) => api.get(`/students/get-student-by-id/${id}`),
   create: (data) => api.post("/students/create-student", data),
   update: (id, data) => api.put(`/students/update-student-by-id/${id}`, data),
   delete: (id) => api.delete(`/students/delete-student-by-id/${id}`),
   search: (query) => api.get(`/students/search?q=${encodeURIComponent(query)}`),
   getGrades: () => api.get("/students/grades"),
+  getStatusOptions: () => api.get("/students/get-status-options"),
   getAttendance: (id) => api.get(`/students/${id}/attendance`),
   getPerformance: (id) => api.get(`/students/${id}/performance`),
+  startExport: ({ scope, classId, classLabel } = {}) =>
+    api.post("/students/export", { scope, classId, classLabel }),
+  getExportStatus: (jobId) => api.get(`/students/export/status/${jobId}`),
+  getExportDownloadUrl: (jobId) =>
+    `${getApiBaseUrl()}/students/export/download/${jobId}`,
 };
 
 // Teacher API functions
@@ -158,9 +174,7 @@ export const classesApi = {
   getGradesAndClasses: () => api.get("/classes/grades-and-classes"),
   getGradesOptions: () => api.get("/classes/get-grades-options"),
   getById: (id) => api.get(`/classes/get-class-by-id/${id}`),
-  create: (data) => {
-    api.post("/classes/create-new-class", data);
-  },
+  create: (data) => api.post("/classes/create-new-class", data),
   update: (id, data) => {
     return api.put(`/classes/update-class/${id}`, data);
   },
@@ -180,7 +194,7 @@ export const subjectsApi = {
     api.post(`/subjects/assign-teacher-to-subject/${subjectId}`, { teacherId }),
 };
 
-// Fees API functions
+// Fees API functions (Legacy)
 export const feesApi = {
   createStructure: (data) => api.post("/fees/create-fee-structure", data),
   getStructures: () => api.get("/fees/get-fee-structures"),
@@ -194,6 +208,164 @@ export const feesApi = {
   generateReport: () => api.get("/fees/generate-fee-report"),
   getFeeTypes: () => api.get("/fees/fee-types"),
   getAcademicSessions: () => api.get("/academic-sessions"),
+};
+
+// Enhanced Fees API functions - Unified under /fees/ base path
+export const enhancedFeesApi = {
+  // Academic Year Management
+  academicYears: {
+    create: (data) => api.post("/fees/academic-years", data),
+    getAll: () => api.get("/fees/academic-years"),
+    getActive: () => api.get("/fees/academic-years/active"),
+    update: (academicYearId, data) =>
+      api.put(`/fees/academic-years/${academicYearId}`, data),
+    delete: (academicYearId) =>
+      api.delete(`/fees/academic-years/${academicYearId}`),
+    setActive: (academicYearId) =>
+      api.put(`/fees/academic-years/${academicYearId}/set-active`, {}),
+  },
+
+  // Fee Type Management
+  feeTypes: {
+    create: (data) => api.post("/fees/fee-types", data),
+    getAll: () => api.get("/fees/fee-types"),
+    update: (feeTypeId, data) => api.put(`/fees/fee-types/${feeTypeId}`, data),
+    delete: (feeTypeId) => api.delete(`/fees/fee-types/${feeTypeId}`),
+  },
+
+  // Class Fee Structure
+  classFees: {
+    create: (data) => api.post("/fees/class-fees", data),
+    get: (academicYearId, classId) =>
+      api.get(`/fees/class-fees/${academicYearId}/${classId}`),
+  },
+
+  // Grade Fee Structure
+  gradeFees: {
+    create: (data) => api.post("/fees/grade-fees", data),
+    get: (academicYearId, gradeId) =>
+      api.get(`/fees/grade-fees/${academicYearId}/${gradeId}`),
+    delete: (academicYearId, gradeId) =>
+      api.delete(`/fees/grade-fees/${academicYearId}/${gradeId}`),
+  },
+
+  // Installment Schedules
+  schedules: {
+    create: (data) => api.post("/fees/installment-schedules", data),
+    createQuarterly: (academicYearId, classId) =>
+      api.post(
+        `/fees/installment-schedules/default-quarterly/${academicYearId}/${classId}`,
+      ),
+    createQuarterlyForGrade: (academicYearId, gradeId) =>
+      api.post(
+        `/fees/installment-schedules/default-quarterly/${academicYearId}/${gradeId}?type=grade`,
+      ),
+    createMonthlyForGrade: (academicYearId, gradeId) =>
+      api.post(
+        `/fees/installment-schedules/default-monthly/${academicYearId}/${gradeId}`,
+      ),
+    getByGrade: (academicYearId, gradeId) =>
+      api.get(`/fees/installment-schedules/${academicYearId}/${gradeId}`),
+  },
+
+  // Student Fee Management
+  studentFees: {
+    assign: (data) => api.post("/fees/student-assignments", data),
+    getAssignment: (studentId, academicYearId) =>
+      api.get(`/fees/student-assignments/${studentId}/${academicYearId}`),
+    update: (assignmentId, data) =>
+      api.put(`/fees/student-assignments/${assignmentId}`, data),
+    getSummary: (studentId, academicYearId) =>
+      api.get(`/fees/students/${studentId}/${academicYearId}/summary`),
+    getInstallments: (studentId, academicYearId) =>
+      api.get(`/fees/students/${studentId}/${academicYearId}/installments`),
+  },
+
+  // Individual Student Fees (fines, punishment fees, etc.)
+  individualFees: {
+    create: (data) => api.post("/fees/individual-fees", data),
+    getAll: (params = {}) => {
+      const queryParams = new URLSearchParams();
+      if (params.academicYearId)
+        queryParams.append("academicYearId", params.academicYearId);
+      if (params.status) queryParams.append("status", params.status);
+      if (params.classId) queryParams.append("classId", params.classId);
+      if (params.gradeId) queryParams.append("gradeId", params.gradeId);
+      const queryString = queryParams.toString();
+      return api.get(
+        `/fees/individual-fees${queryString ? `?${queryString}` : ""}`,
+      );
+    },
+    getByStudent: (studentId, params = {}) => {
+      const queryParams = new URLSearchParams();
+      if (params.academicYearId)
+        queryParams.append("academicYearId", params.academicYearId);
+      if (params.status) queryParams.append("status", params.status);
+      const queryString = queryParams.toString();
+      return api.get(
+        `/fees/individual-fees/student/${studentId}${queryString ? `?${queryString}` : ""}`,
+      );
+    },
+    update: (individualFeeId, data) =>
+      api.put(`/fees/individual-fees/${individualFeeId}`, data),
+    delete: (individualFeeId) =>
+      api.delete(`/fees/individual-fees/${individualFeeId}`),
+  },
+
+  // Payment Processing
+  payments: {
+    record: (data) => api.post("/fees/payments", data),
+    getHistory: (studentId) => api.get(`/fees/payment-history/${studentId}`),
+  },
+
+  // Reports & Analytics
+  reports: {
+    getOverdue: (academicYearId, params = {}) => {
+      const queryParams = new URLSearchParams();
+      if (academicYearId) queryParams.append("academicYearId", academicYearId);
+      if (params.classId) queryParams.append("classId", params.classId);
+      if (params.studentId) queryParams.append("studentId", params.studentId);
+      const queryString = queryParams.toString();
+      return api.get(
+        `/fees/reports/overdue${queryString ? `?${queryString}` : ""}`,
+      );
+    },
+    getCollection: (startDate, endDate, params = {}) => {
+      const queryParams = new URLSearchParams();
+      if (startDate) queryParams.append("startDate", startDate);
+      if (endDate) queryParams.append("endDate", endDate);
+      if (params.classId) queryParams.append("classId", params.classId);
+      if (params.paymentMethod)
+        queryParams.append("paymentMethod", params.paymentMethod);
+      const queryString = queryParams.toString();
+      return api.get(
+        `/fees/reports/collection${queryString ? `?${queryString}` : ""}`,
+      );
+    },
+    getDashboardStats: (academicYearId) => {
+      const queryParams = academicYearId
+        ? `?academicYearId=${academicYearId}`
+        : "";
+      return api.get(`/fees/dashboard/stats${queryParams}`);
+    },
+  },
+
+  // Constants
+  constants: {
+    getPaymentMethods: () => api.get("/fees/payment-methods"),
+    getScheduleTypes: () => api.get("/fees/constants/schedule-types"),
+    getInstallmentStatuses: () =>
+      api.get("/fees/constants/installment-statuses"),
+  },
+
+  // Dues export (entire school or single class)
+  duesExport: {
+    start: ({ scope, classId, classLabel } = {}) =>
+      api.post("/fees/export/dues", { scope, classId, classLabel }),
+    getStatus: (jobId) => api.get(`/fees/export/dues/status/${jobId}`),
+    getDownloadUrl: (jobId) =>
+      `${getApiBaseUrl()}/fees/export/dues/download/${jobId}`,
+  },
 };
 
 // Features API functions
@@ -248,14 +420,22 @@ export const studentsWithFeesApi = {
 
 // Profile API functions
 export const profileApi = {
-  get: () => api.get("/auth/get-user-profile"),
+  get: () => api.get("/profile"),
   update: (data) => api.put("/profile", data),
-  changePassword: (data) => api.post("/profile/change-password", data),
+  changePassword: (data) => api.put("/profile/password", data),
   uploadAvatar: (file) => {
     const formData = new FormData();
     formData.append("avatar", file);
     return api.post("/profile/avatar", formData);
   },
+};
+
+// Settings API functions
+export const settingsApi = {
+  getSchool: () => api.get("/settings/school"),
+  updateSchool: (data) => api.put("/settings/school", data),
+  getPreferences: () => api.get("/settings/preferences"),
+  updatePreferences: (data) => api.put("/settings/preferences", data),
 };
 
 export default api;

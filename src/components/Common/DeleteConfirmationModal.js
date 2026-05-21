@@ -11,6 +11,7 @@ const DeleteConfirmationModal = ({
   cancelText = "Cancel",
   itemName = "",
   isLoading = false,
+  errorMessage = "",
 }) => {
   if (!isOpen) return null;
 
@@ -26,7 +27,7 @@ const DeleteConfirmationModal = ({
       onClick={handleBackdropClick}
     >
       <div
-        className="bg-white rounded-lg p-6 w-full max-w-md"
+        className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center mb-4">
@@ -34,20 +35,32 @@ const DeleteConfirmationModal = ({
             <Icons.AlertTriangle className="w-6 h-6 text-red-600" />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-medium text-gray-900">{title}</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+              {title}
+            </h3>
           </div>
         </div>
 
         <div className="mb-6">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
             {message}
             {itemName && (
-              <span className="font-medium text-gray-700"> "{itemName}"</span>
+              <span className="font-medium text-gray-700 dark:text-gray-300">
+                {" "}
+                "{itemName}"
+              </span>
             )}
           </p>
           <p className="text-sm text-gray-500 mt-2">
             This action cannot be undone.
           </p>
+          {errorMessage && (
+            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {errorMessage}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end space-x-3">

@@ -10,14 +10,6 @@ const TeacherDetail = () => {
   // Use TanStack Query hook
   const { data: teacherData, isLoading: loading, error } = useTeacher(id);
 
-  // Debug logging
-  console.log("TeacherDetail Debug:", {
-    id,
-    teacherData,
-    loading,
-    error,
-  });
-
   const [activeTab, setActiveTab] = useState("overview");
 
   // Transform the teacher data if available
@@ -54,7 +46,7 @@ const TeacherDetail = () => {
       case "Inactive":
         return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-gray-800 dark:text-gray-300";
     }
   };
 
@@ -68,9 +60,9 @@ const TeacherDetail = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-IN", {
       style: "currency",
-      currency: "USD",
+      currency: "INR",
     }).format(amount);
   };
 
@@ -118,7 +110,9 @@ const TeacherDetail = () => {
             <Icons.ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{teacher.name}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {teacher.name}
+            </h1>
             <p className="text-gray-600 mt-1">
               {teacher.department} Department
             </p>
@@ -148,14 +142,16 @@ const TeacherDetail = () => {
           <div className="flex-1">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   {teacher.name}
                 </h2>
-                <p className="text-gray-600">{teacher.qualification}</p>
+                <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
+                  {teacher.qualification}
+                </p>
               </div>
               <span
                 className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(
-                  teacher.status
+                  teacher.status,
                 )}`}
               >
                 {teacher.status}
@@ -163,24 +159,30 @@ const TeacherDetail = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="flex items-center text-gray-600">
+              <div className="flex items-center text-gray-600 dark:text-gray-400 dark:text-gray-500">
                 <Icons.Mail className="w-5 h-5 mr-3" />
                 <div>
-                  <p className="text-sm text-gray-500">Email</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                    Email
+                  </p>
                   <p className="font-medium">{teacher.email}</p>
                 </div>
               </div>
-              <div className="flex items-center text-gray-600">
+              <div className="flex items-center text-gray-600 dark:text-gray-400 dark:text-gray-500">
                 <Icons.Phone className="w-5 h-5 mr-3" />
                 <div>
-                  <p className="text-sm text-gray-500">Phone</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                    Phone
+                  </p>
                   <p className="font-medium">{teacher.phone}</p>
                 </div>
               </div>
-              <div className="flex items-center text-gray-600">
+              <div className="flex items-center text-gray-600 dark:text-gray-400 dark:text-gray-500">
                 <Icons.Calendar className="w-5 h-5 mr-3" />
                 <div>
-                  <p className="text-sm text-gray-500">Joined</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                    Joined
+                  </p>
                   <p className="font-medium">
                     {teacher.joiningDate
                       ? new Date(teacher.joiningDate).toLocaleDateString()
@@ -188,10 +190,12 @@ const TeacherDetail = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center text-gray-600">
+              <div className="flex items-center text-gray-600 dark:text-gray-400 dark:text-gray-500">
                 <Icons.Award className="w-5 h-5 mr-3" />
                 <div>
-                  <p className="text-sm text-gray-500">Experience</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                    Experience
+                  </p>
                   <p className="font-medium">{teacher.experience} years</p>
                 </div>
               </div>
@@ -201,7 +205,7 @@ const TeacherDetail = () => {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex space-x-8">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -212,7 +216,7 @@ const TeacherDetail = () => {
                 className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
                     ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:border-gray-600"
                 }`}
               >
                 <Icon className="w-4 h-4 mr-2" />
@@ -232,28 +236,34 @@ const TeacherDetail = () => {
               <div className="card text-center">
                 <div className="p-6">
                   <Icons.BookOpen className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {teacher.subjects.length}
                   </p>
-                  <p className="text-sm text-gray-600">Subjects</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+                    Subjects
+                  </p>
                 </div>
               </div>
               <div className="card text-center">
                 <div className="p-6">
                   <Icons.Users className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {teacher.managedClasses.length}
                   </p>
-                  <p className="text-sm text-gray-600">Classes</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+                    Classes
+                  </p>
                 </div>
               </div>
               <div className="card text-center">
                 <div className="p-6">
-                  <Icons.DollarSign className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-gray-900">
+                  <Icons.IndianRupee className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {formatCurrency(teacher.salary)}
                   </p>
-                  <p className="text-sm text-gray-600">Salary</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+                    Salary
+                  </p>
                 </div>
               </div>
             </div>
@@ -263,7 +273,9 @@ const TeacherDetail = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Biography
               </h3>
-              <p className="text-gray-600">{teacher.bio}</p>
+              <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
+                {teacher.bio}
+              </p>
             </div>
           </div>
 
@@ -275,28 +287,36 @@ const TeacherDetail = () => {
               </h3>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     Department
                   </label>
-                  <p className="text-gray-900">{teacher.department}</p>
+                  <p className="text-gray-900 dark:text-white">
+                    {teacher.department}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     Qualification
                   </label>
-                  <p className="text-gray-900">{teacher.qualification}</p>
+                  <p className="text-gray-900 dark:text-white">
+                    {teacher.qualification}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     Address
                   </label>
-                  <p className="text-gray-900">{teacher.address}</p>
+                  <p className="text-gray-900 dark:text-white">
+                    {teacher.address}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     Emergency Contact
                   </label>
-                  <p className="text-gray-900">{teacher.emergencyContact}</p>
+                  <p className="text-gray-900 dark:text-white">
+                    {teacher.emergencyContact}
+                  </p>
                 </div>
               </div>
             </div>
@@ -309,17 +329,17 @@ const TeacherDetail = () => {
           {teacher.subjects.map((subject, index) => (
             <div key={index} className="card">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   {subject.subjectName}
                 </h3>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   {subject.subjectCode}
                 </span>
               </div>
               <p className="text-sm text-gray-600 mb-3">
                 {subject.department} Department
               </p>
-              <div className="flex items-center text-sm text-gray-500">
+              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                 <Icons.Clock className="w-4 h-4 mr-2" />
                 Active Course
               </div>
@@ -328,7 +348,9 @@ const TeacherDetail = () => {
           {teacher.subjects.length === 0 && (
             <div className="col-span-full text-center py-8">
               <Icons.BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No subjects assigned</p>
+              <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                No subjects assigned
+              </p>
             </div>
           )}
         </div>
@@ -339,15 +361,17 @@ const TeacherDetail = () => {
           {teacher.managedClasses.map((classItem, index) => (
             <div key={index} className="card">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   {classItem.className}
                 </h3>
-                <span className="text-sm text-gray-500">{classItem.room}</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                  {classItem.room}
+                </span>
               </div>
               <p className="text-sm text-gray-600 mb-3">
                 {classItem.grade} - Section {classItem.section}
               </p>
-              <div className="flex items-center text-sm text-gray-500">
+              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
                 <Icons.MapPin className="w-4 h-4 mr-2" />
                 {classItem.room}
               </div>
@@ -356,7 +380,9 @@ const TeacherDetail = () => {
           {teacher.managedClasses.length === 0 && (
             <div className="col-span-full text-center py-8">
               <Icons.Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No classes assigned</p>
+              <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                No classes assigned
+              </p>
             </div>
           )}
         </div>
@@ -372,29 +398,45 @@ const TeacherDetail = () => {
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Icons.TrendingUp className="w-8 h-8 text-green-600" />
               </div>
-              <p className="text-2xl font-bold text-gray-900">95%</p>
-              <p className="text-sm text-gray-600">Student Satisfaction</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                95%
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+                Student Satisfaction
+              </p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Icons.Award className="w-8 h-8 text-blue-600" />
               </div>
-              <p className="text-2xl font-bold text-gray-900">4.8</p>
-              <p className="text-sm text-gray-600">Average Rating</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                4.8
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+                Average Rating
+              </p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Icons.Target className="w-8 h-8 text-purple-600" />
               </div>
-              <p className="text-2xl font-bold text-gray-900">89%</p>
-              <p className="text-sm text-gray-600">Goal Achievement</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                89%
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+                Goal Achievement
+              </p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Icons.Calendar className="w-8 h-8 text-orange-600" />
               </div>
-              <p className="text-2xl font-bold text-gray-900">98%</p>
-              <p className="text-sm text-gray-600">Attendance</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                98%
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+                Attendance
+              </p>
             </div>
           </div>
         </div>

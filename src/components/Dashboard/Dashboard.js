@@ -4,7 +4,7 @@ import {
   TrendingDown,
   Users,
   GraduationCap,
-  DollarSign,
+  IndianRupee,
   Calendar,
   MoreHorizontal,
   Plus,
@@ -24,6 +24,7 @@ import {
   useAttendanceOverview,
   usePerformanceData,
 } from "../../hooks/useApiHooks";
+import { useToast } from "../../context/UIProvider";
 
 // Add Task Popup Component
 const AddTaskPopup = ({
@@ -33,10 +34,12 @@ const AddTaskPopup = ({
   handleSaveTask,
 }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Add New Task</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            Add New Task
+          </h2>
           <button
             onClick={handleCloseAddTaskPopup}
             className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
@@ -54,7 +57,7 @@ const AddTaskPopup = ({
               type="text"
               value={taskFormData.title}
               onChange={(e) => handleTaskFormChange("title", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Enter task title"
             />
           </div>
@@ -68,7 +71,7 @@ const AddTaskPopup = ({
               onChange={(e) =>
                 handleTaskFormChange("description", e.target.value)
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               rows="3"
               placeholder="Enter task description"
             />
@@ -82,7 +85,7 @@ const AddTaskPopup = ({
               type="date"
               value={taskFormData.dueDate}
               onChange={(e) => handleTaskFormChange("dueDate", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
           {/* Time Field */}
@@ -94,11 +97,11 @@ const AddTaskPopup = ({
               type="time"
               value={taskFormData.dueTime}
               onChange={(e) => handleTaskFormChange("dueTime", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
         </div>
-        <div className="flex items-center justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
+        <div className="flex items-center justify-end space-x-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={handleCloseAddTaskPopup}
             className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
@@ -125,10 +128,12 @@ const TaskDetailPopup = ({
   formatTaskDate,
 }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Task Details</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            Task Details
+          </h2>
           <button
             onClick={handleCloseTaskDetail}
             className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
@@ -143,7 +148,9 @@ const TaskDetailPopup = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Title
               </label>
-              <p className="text-gray-900 font-medium">{selectedTask.title}</p>
+              <p className="text-gray-900 dark:text-white font-medium">
+                {selectedTask.title}
+              </p>
             </div>
             {/* Description */}
             {selectedTask.description && (
@@ -151,7 +158,9 @@ const TaskDetailPopup = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Description
                 </label>
-                <p className="text-gray-600">{selectedTask.description}</p>
+                <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
+                  {selectedTask.description}
+                </p>
               </div>
             )}
             {/* Due Date & Time */}
@@ -160,7 +169,7 @@ const TaskDetailPopup = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Due Date & Time
                 </label>
-                <div className="flex items-center text-gray-600">
+                <div className="flex items-center text-gray-600 dark:text-gray-400 dark:text-gray-500">
                   <Clock className="w-4 h-4 mr-2" />
                   {formatTaskDate(selectedTask.dueDate, selectedTask.dueTime)}
                 </div>
@@ -176,15 +185,15 @@ const TaskDetailPopup = ({
                   selectedTask.status === "completed"
                     ? "bg-green-100 text-green-800"
                     : selectedTask.status === "in-progress"
-                    ? "bg-blue-100 text-blue-800"
-                    : "bg-yellow-100 text-yellow-800"
+                      ? "bg-blue-100 text-blue-800"
+                      : "bg-yellow-100 text-yellow-800"
                 }`}
               >
                 {selectedTask.status === "completed"
                   ? "Completed"
                   : selectedTask.status === "in-progress"
-                  ? "In Progress"
-                  : "Pending"}
+                    ? "In Progress"
+                    : "Pending"}
               </div>
             </div>
             {/* Created Date */}
@@ -192,7 +201,7 @@ const TaskDetailPopup = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Created
               </label>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
                 {new Date(selectedTask.createdAt).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "long",
@@ -204,7 +213,7 @@ const TaskDetailPopup = ({
             </div>
           </div>
         )}
-        <div className="flex items-center justify-between space-x-3 mt-6 pt-4 border-t border-gray-200">
+        <div className="flex items-center justify-between space-x-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={() => handleDeleteTask(selectedTask?.id)}
             className="flex items-center px-4 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors duration-200"
@@ -225,6 +234,7 @@ const TaskDetailPopup = ({
 );
 
 const Dashboard = () => {
+  const toast = useToast();
   // Use TanStack Query hooks
   const {
     data: statsData,
@@ -321,7 +331,7 @@ const Dashboard = () => {
 
       return initials || "U";
     },
-    [userData]
+    [userData],
   );
 
   // Update stats when data is available
@@ -417,7 +427,7 @@ const Dashboard = () => {
 
   const handleSaveTask = () => {
     if (!taskFormData.title.trim()) {
-      alert("Task title is required");
+      toast.warning("Task title is required");
       return;
     }
 
@@ -474,8 +484,10 @@ const Dashboard = () => {
     <div className="stat-card">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-2">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500">
+            {title}
+          </p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
             {prefix}
             {typeof value === "number" ? value.toLocaleString() : value}
             {suffix}
@@ -508,10 +520,10 @@ const Dashboard = () => {
   const AttendanceChart = () => (
     <div className="card">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Student Attendance
         </h3>
-        <button className="text-gray-400 hover:text-gray-600">
+        <button className="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500">
           <MoreHorizontal className="w-5 h-5" />
         </button>
       </div>
@@ -538,7 +550,7 @@ const Dashboard = () => {
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-2xl font-bold text-gray-900">
+            <span className="text-2xl font-bold text-gray-900 dark:text-white">
               {stats.studentAttendance}%
             </span>
           </div>
@@ -547,11 +559,15 @@ const Dashboard = () => {
       <div className="flex justify-center mt-4 space-x-6">
         <div className="flex items-center">
           <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-          <span className="text-sm text-gray-600">Present</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+            Present
+          </span>
         </div>
         <div className="flex items-center">
           <div className="w-3 h-3 bg-gray-300 rounded-full mr-2"></div>
-          <span className="text-sm text-gray-600">Absent</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+            Absent
+          </span>
         </div>
       </div>
     </div>
@@ -560,7 +576,7 @@ const Dashboard = () => {
   const PerformanceChart = () => (
     <div className="card">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Student Performance
         </h3>
         <select className="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
@@ -573,7 +589,7 @@ const Dashboard = () => {
         {performanceChartData && performanceChartData.length > 0 ? (
           performanceChartData.map((item, index) => (
             <div key={index} className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 {item.class}
               </span>
               <div className="flex-1 mx-4">
@@ -584,7 +600,7 @@ const Dashboard = () => {
                   ></div>
                 </div>
               </div>
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-sm font-medium text-gray-900 dark:text-white">
                 {item.value}%
               </span>
             </div>
@@ -605,7 +621,9 @@ const Dashboard = () => {
   const TaskList = () => (
     <div className="card">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Tasks</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Tasks
+        </h3>
         <button
           onClick={handleAddTask}
           className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center transition-colors duration-200"
@@ -624,7 +642,7 @@ const Dashboard = () => {
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h4 className="text-sm font-medium text-gray-900 mb-1">
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
                     {task.title}
                   </h4>
                   {task.description && (
@@ -633,7 +651,7 @@ const Dashboard = () => {
                     </p>
                   )}
                   {(task.dueDate || task.dueTime) && (
-                    <div className="flex items-center text-xs text-gray-500">
+                    <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
                       <Clock className="w-3 h-3 mr-1" />
                       {formatTaskDate(task.dueDate, task.dueTime)}
                     </div>
@@ -644,15 +662,15 @@ const Dashboard = () => {
                     task.status === "completed"
                       ? "bg-green-100 text-green-800"
                       : task.status === "in-progress"
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-yellow-100 text-yellow-800"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-yellow-100 text-yellow-800"
                   }`}
                 >
                   {task.status === "completed"
                     ? "Done"
                     : task.status === "in-progress"
-                    ? "In Progress"
-                    : "Pending"}
+                      ? "In Progress"
+                      : "Pending"}
                 </div>
               </div>
             </div>
@@ -671,7 +689,9 @@ const Dashboard = () => {
   const RecentActivity = () => (
     <div className="card">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Recent Activity
+        </h3>
         <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
           View All
         </button>
@@ -686,10 +706,12 @@ const Dashboard = () => {
                   <Icon className="w-4 h-4 text-blue-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">
                     {activity.title}
                   </p>
-                  <p className="text-xs text-gray-500">{activity.time}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                    {activity.time}
+                  </p>
                 </div>
               </div>
             );
@@ -710,8 +732,10 @@ const Dashboard = () => {
   const Agenda = () => (
     <div className="card">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Agenda</h3>
-        <button className="text-gray-400 hover:text-gray-600">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Agenda
+        </h3>
+        <button className="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500">
           <MoreHorizontal className="w-5 h-5" />
         </button>
       </div>
@@ -724,13 +748,13 @@ const Dashboard = () => {
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">
                     {item.subject}
                   </p>
                   <p className="text-sm text-gray-600 mt-1">{item.task}</p>
                   <p className="text-xs text-gray-500 mt-2">{item.time}</p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-gray-400" />
+                <ChevronRight className="w-4 h-4 text-gray-400 dark:text-gray-500" />
               </div>
             </div>
           ))
@@ -752,8 +776,10 @@ const Dashboard = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Dashboard
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
             Welcome back! Here's what's happening at your school.
           </p>
         </div>

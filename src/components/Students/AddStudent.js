@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -15,12 +15,23 @@ import {
   Upload,
   Paperclip,
 } from "lucide-react";
-import { useCreateStudent, useGradesAndClasses } from "../../hooks/useApiHooks";
+import {
+  useCreateStudent,
+  useGradesAndClasses,
+  useTeacherNames,
+} from "../../hooks/useApiHooks";
 import { getSchoolId } from "../../utils/dashboardConfig";
 
 const AddStudent = () => {
   const navigate = useNavigate();
+  const formRef = useRef(null);
   const createStudent = useCreateStudent();
+  const { data: teacherNamesResponse } = useTeacherNames();
+  const teacherList = Array.isArray(teacherNamesResponse?.data)
+    ? teacherNamesResponse.data
+    : Array.isArray(teacherNamesResponse)
+      ? teacherNamesResponse
+      : [];
   const {
     data: gradesAndClassesData,
     isLoading: classesLoading,
@@ -70,6 +81,11 @@ const AddStudent = () => {
     guardianEmail: "",
     guardianRelation: "",
     guardianAddress: "",
+    // Staff-ward (optional)
+    isStaffWard: false,
+    staffId: "",
+    staffName: "",
+    staffRelation: "",
     // File attachments
     photo: null,
     birthCertificate: null,
@@ -305,13 +321,35 @@ const AddStudent = () => {
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors;
+  };
+
+  const scrollToFirstError = (errorKeys) => {
+    if (!errorKeys.length) return;
+    const form = formRef.current;
+    if (!form) return;
+
+    const fields = form.querySelectorAll("[name]");
+    for (const field of fields) {
+      if (errorKeys.includes(field.name)) {
+        field.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (typeof field.focus === "function") {
+          field.focus({ preventScroll: true });
+        }
+        return;
+      }
+    }
+    form.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validateForm()) {
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      requestAnimationFrame(() =>
+        scrollToFirstError(Object.keys(validationErrors)),
+      );
       return;
     }
 
@@ -357,6 +395,15 @@ const AddStudent = () => {
         previousSchoolAddress: formData.previousSchoolAddress,
         previousSchoolBoard: formData.previousSchoolBoard,
         reasonForLeaving: formData.reasonForLeaving,
+        // Staff-ward link (optional)
+        staffRelation: formData.isStaffWard
+          ? {
+              isStaffWard: true,
+              staffId: formData.staffId || null,
+              staffName: formData.staffName || null,
+              relation: formData.staffRelation || null,
+            }
+          : { isStaffWard: false },
         // Additional fields
         subjects: formData.subjects,
       };
@@ -397,9 +444,9 @@ const AddStudent = () => {
               onClick={handleCancel}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
+              <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400 dark:text-gray-500" />
             </button>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               Add New Student
             </h1>
           </div>
@@ -429,13 +476,13 @@ const AddStudent = () => {
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 p-6">
             {/* Personal Information */}
             <div className="mb-8">
               <div className="flex items-center space-x-2 mb-4">
                 <User className="w-5 h-5 text-blue-600" />
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Personal Information
                 </h2>
               </div>
@@ -451,7 +498,7 @@ const AddStudent = () => {
                     value={formData.firstName}
                     onChange={handleInputChange}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                      errors.firstName ? "border-red-500" : "border-gray-300"
+                      errors.firstName ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                     }`}
                     placeholder="Enter first name"
                   />
@@ -473,7 +520,7 @@ const AddStudent = () => {
                     value={formData.lastName}
                     onChange={handleInputChange}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                      errors.lastName ? "border-red-500" : "border-gray-300"
+                      errors.lastName ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                     }`}
                     placeholder="Enter last name"
                   />
@@ -495,7 +542,7 @@ const AddStudent = () => {
                     value={formData.dateOfBirth}
                     onChange={handleInputChange}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                      errors.dateOfBirth ? "border-red-500" : "border-gray-300"
+                      errors.dateOfBirth ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                     }`}
                   />
                   {errors.dateOfBirth && (
@@ -515,7 +562,7 @@ const AddStudent = () => {
                     value={formData.gender}
                     onChange={handleInputChange}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                      errors.gender ? "border-red-500" : "border-gray-300"
+                      errors.gender ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                     }`}
                   >
                     <option value="">Select Gender</option>
@@ -536,14 +583,14 @@ const AddStudent = () => {
                     Email Address
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
                       className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                        errors.email ? "border-red-500" : "border-gray-300"
+                        errors.email ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                       }`}
                       placeholder="student@email.com (optional)"
                     />
@@ -561,14 +608,14 @@ const AddStudent = () => {
                     Phone Number
                   </label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="tel"
                       name="phone"
                       value={formData.phone}
                       onChange={handleInputChange}
                       className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                        errors.phone ? "border-red-500" : "border-gray-300"
+                        errors.phone ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                       }`}
                       placeholder="+1 234 567 8900 (optional)"
                     />
@@ -586,14 +633,14 @@ const AddStudent = () => {
                     Address *
                   </label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-gray-500" />
                     <textarea
                       name="address"
                       value={formData.address}
                       onChange={handleInputChange}
                       rows={3}
                       className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none ${
-                        errors.address ? "border-red-500" : "border-gray-300"
+                        errors.address ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                       }`}
                       placeholder="Enter student's address"
                     />
@@ -612,7 +659,7 @@ const AddStudent = () => {
             <div className="mb-8">
               <div className="flex items-center space-x-2 mb-4">
                 <School className="w-5 h-5 text-indigo-600" />
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Previous School Information
                 </h2>
               </div>
@@ -627,7 +674,7 @@ const AddStudent = () => {
                     name="previousSchoolName"
                     value={formData.previousSchoolName}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     placeholder="Enter previous school name"
                   />
                 </div>
@@ -640,7 +687,7 @@ const AddStudent = () => {
                     name="previousSchoolLastGrade"
                     value={formData.previousSchoolLastGrade}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   >
                     <option value="">Select Grade</option>
                     {gradeOptions.map((grade) => (
@@ -659,7 +706,7 @@ const AddStudent = () => {
                     name="previousSchoolBoard"
                     value={formData.previousSchoolBoard}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   >
                     <option value="">Select Board</option>
                     {boardOptions.map((board) => (
@@ -679,7 +726,7 @@ const AddStudent = () => {
                     name="reasonForLeaving"
                     value={formData.reasonForLeaving}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     placeholder="e.g., Relocation, Better opportunities"
                   />
                 </div>
@@ -693,7 +740,7 @@ const AddStudent = () => {
                     value={formData.previousSchoolAddress}
                     onChange={handleInputChange}
                     rows={2}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     placeholder="Enter previous school address"
                   />
                 </div>
@@ -704,7 +751,7 @@ const AddStudent = () => {
             <div className="mb-8">
               <div className="flex items-center space-x-2 mb-4">
                 <GraduationCap className="w-5 h-5 text-green-600" />
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Academic Information
                 </h2>
               </div>
@@ -720,7 +767,7 @@ const AddStudent = () => {
                     onChange={handleInputChange}
                     disabled={classesLoading}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                      errors.grade ? "border-red-500" : "border-gray-300"
+                      errors.grade ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                     } ${
                       classesLoading ? "bg-gray-100 cursor-not-allowed" : ""
                     }`}
@@ -739,7 +786,7 @@ const AddStudent = () => {
                   </select>
                   {/* Debug info */}
                   {process.env.NODE_ENV === "development" && (
-                    <div className="mt-1 text-xs text-gray-500">
+                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
                       Debug: {gradeOptions.length} grades loaded
                     </div>
                   )}
@@ -761,7 +808,7 @@ const AddStudent = () => {
                     onChange={handleInputChange}
                     disabled={!formData.grade || classesLoading}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                      errors.class ? "border-red-500" : "border-gray-300"
+                      errors.class ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                     } ${
                       !formData.grade || classesLoading
                         ? "bg-gray-100 cursor-not-allowed"
@@ -804,7 +851,7 @@ const AddStudent = () => {
                     value={formData.rollNumber}
                     onChange={handleInputChange}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                      errors.rollNumber ? "border-red-500" : "border-gray-300"
+                      errors.rollNumber ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                     }`}
                     placeholder="2024001"
                   />
@@ -821,7 +868,7 @@ const AddStudent = () => {
                     Admission Date *
                   </label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    <Calendar className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="date"
                       name="admissionDate"
@@ -830,7 +877,7 @@ const AddStudent = () => {
                       className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                         errors.admissionDate
                           ? "border-red-500"
-                          : "border-gray-300"
+                          : "border-gray-300 dark:border-gray-600"
                       }`}
                     />
                   </div>
@@ -850,7 +897,7 @@ const AddStudent = () => {
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   >
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
@@ -869,7 +916,7 @@ const AddStudent = () => {
                     min="1"
                     max="20"
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                      errors.subjects ? "border-red-500" : "border-gray-300"
+                      errors.subjects ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                     }`}
                     placeholder="6"
                   />
@@ -887,7 +934,7 @@ const AddStudent = () => {
             <div className="mb-8">
               <div className="flex items-center space-x-2 mb-4">
                 <Users className="w-5 h-5 text-blue-600" />
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Father's Information
                 </h2>
               </div>
@@ -902,7 +949,7 @@ const AddStudent = () => {
                     name="fatherName"
                     value={formData.fatherName}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     placeholder="Enter father's name"
                   />
                 </div>
@@ -912,7 +959,7 @@ const AddStudent = () => {
                     Father's Phone
                   </label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="tel"
                       name="fatherPhone"
@@ -921,7 +968,7 @@ const AddStudent = () => {
                       className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                         errors.fatherPhone
                           ? "border-red-500"
-                          : "border-gray-300"
+                          : "border-gray-300 dark:border-gray-600"
                       }`}
                       placeholder="+1 234 567 8900"
                     />
@@ -939,7 +986,7 @@ const AddStudent = () => {
                     Father's Email
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="email"
                       name="fatherEmail"
@@ -948,7 +995,7 @@ const AddStudent = () => {
                       className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                         errors.fatherEmail
                           ? "border-red-500"
-                          : "border-gray-300"
+                          : "border-gray-300 dark:border-gray-600"
                       }`}
                       placeholder="father@email.com"
                     />
@@ -970,7 +1017,7 @@ const AddStudent = () => {
                     name="fatherOccupation"
                     value={formData.fatherOccupation}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     placeholder="Enter father's occupation"
                   />
                 </div>
@@ -981,7 +1028,7 @@ const AddStudent = () => {
             <div className="mb-8">
               <div className="flex items-center space-x-2 mb-4">
                 <Users className="w-5 h-5 text-pink-600" />
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Mother's Information
                 </h2>
               </div>
@@ -996,7 +1043,7 @@ const AddStudent = () => {
                     name="motherName"
                     value={formData.motherName}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     placeholder="Enter mother's name"
                   />
                 </div>
@@ -1006,7 +1053,7 @@ const AddStudent = () => {
                     Mother's Phone
                   </label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="tel"
                       name="motherPhone"
@@ -1015,7 +1062,7 @@ const AddStudent = () => {
                       className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                         errors.motherPhone
                           ? "border-red-500"
-                          : "border-gray-300"
+                          : "border-gray-300 dark:border-gray-600"
                       }`}
                       placeholder="+1 234 567 8900"
                     />
@@ -1033,7 +1080,7 @@ const AddStudent = () => {
                     Mother's Email
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="email"
                       name="motherEmail"
@@ -1042,7 +1089,7 @@ const AddStudent = () => {
                       className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                         errors.motherEmail
                           ? "border-red-500"
-                          : "border-gray-300"
+                          : "border-gray-300 dark:border-gray-600"
                       }`}
                       placeholder="mother@email.com"
                     />
@@ -1064,7 +1111,7 @@ const AddStudent = () => {
                     name="motherOccupation"
                     value={formData.motherOccupation}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     placeholder="Enter mother's occupation"
                   />
                 </div>
@@ -1081,7 +1128,7 @@ const AddStudent = () => {
             <div className="mb-8">
               <div className="flex items-center space-x-2 mb-4">
                 <Users className="w-5 h-5 text-purple-600" />
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Guardian Information (if different from parents)
                 </h2>
               </div>
@@ -1097,7 +1144,7 @@ const AddStudent = () => {
                     value={formData.guardianName}
                     onChange={handleInputChange}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                      errors.guardianName ? "border-red-500" : "border-gray-300"
+                      errors.guardianName ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                     }`}
                     placeholder="Enter guardian's name"
                   />
@@ -1114,7 +1161,7 @@ const AddStudent = () => {
                     Guardian Phone
                   </label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="tel"
                       name="guardianPhone"
@@ -1123,7 +1170,7 @@ const AddStudent = () => {
                       className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                         errors.guardianPhone
                           ? "border-red-500"
-                          : "border-gray-300"
+                          : "border-gray-300 dark:border-gray-600"
                       }`}
                       placeholder="+1 234 567 8900"
                     />
@@ -1141,7 +1188,7 @@ const AddStudent = () => {
                     Guardian Email
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="email"
                       name="guardianEmail"
@@ -1150,7 +1197,7 @@ const AddStudent = () => {
                       className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                         errors.guardianEmail
                           ? "border-red-500"
-                          : "border-gray-300"
+                          : "border-gray-300 dark:border-gray-600"
                       }`}
                       placeholder="guardian@email.com"
                     />
@@ -1171,7 +1218,7 @@ const AddStudent = () => {
                     name="guardianRelation"
                     value={formData.guardianRelation}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   >
                     <option value="">Select Relationship</option>
                     {relationOptions.map((relation) => (
@@ -1191,18 +1238,107 @@ const AddStudent = () => {
                     value={formData.guardianAddress}
                     onChange={handleInputChange}
                     rows={2}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     placeholder="Enter guardian's address"
                   />
                 </div>
               </div>
             </div>
 
+            {/* Staff-ward (optional) */}
+            <div className="mb-8">
+              <div className="flex items-center space-x-2 mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  School Staff Relation (optional)
+                </h2>
+              </div>
+
+              <label className="inline-flex items-center cursor-pointer mb-4">
+                <input
+                  type="checkbox"
+                  checked={formData.isStaffWard}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      isStaffWard: e.target.checked,
+                      ...(e.target.checked
+                        ? {}
+                        : { staffId: "", staffName: "", staffRelation: "" }),
+                    }))
+                  }
+                  className="w-5 h-5 text-blue-600 rounded mr-3"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  This student is a ward of a teacher / staff member at this
+                  school
+                </span>
+              </label>
+
+              {formData.isStaffWard && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Staff Member
+                    </label>
+                    <select
+                      value={formData.staffId}
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        const teacher = teacherList.find(
+                          (t) => t.teacherId === id,
+                        );
+                        const fullName = teacher
+                          ? `${teacher.user?.firstName || ""} ${teacher.user?.lastName || ""}`.trim()
+                          : "";
+                        setFormData((prev) => ({
+                          ...prev,
+                          staffId: id,
+                          staffName: fullName,
+                        }));
+                      }}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
+                      <option value="">Select teacher / staff</option>
+                      {teacherList.map((t) => (
+                        <option key={t.teacherId} value={t.teacherId}>
+                          {`${t.user?.firstName || ""} ${t.user?.lastName || ""}`.trim() ||
+                            t.teacherId}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Relation
+                    </label>
+                    <select
+                      value={formData.staffRelation}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          staffRelation: e.target.value,
+                        }))
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
+                      <option value="">Select relation</option>
+                      <option value="Father">Father</option>
+                      <option value="Mother">Mother</option>
+                      <option value="Sibling">Sibling</option>
+                      <option value="Guardian">Guardian</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* File Attachments */}
             <div className="mb-8">
               <div className="flex items-center space-x-2 mb-4">
                 <Paperclip className="w-5 h-5 text-green-600" />
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   File Attachments
                 </h2>
               </div>
@@ -1225,10 +1361,10 @@ const AddStudent = () => {
                       className="cursor-pointer flex flex-col items-center"
                     >
                       <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
                         Click to upload photo
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
                         PNG, JPG up to 5MB
                       </span>
                     </label>
@@ -1266,10 +1402,10 @@ const AddStudent = () => {
                       className="cursor-pointer flex flex-col items-center"
                     >
                       <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
                         Click to upload certificate
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
                         PDF, PNG, JPG up to 10MB
                       </span>
                     </label>
@@ -1309,10 +1445,10 @@ const AddStudent = () => {
                       className="cursor-pointer flex flex-col items-center"
                     >
                       <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
                         Click to upload certificate
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
                         PDF, PNG, JPG up to 10MB
                       </span>
                     </label>
@@ -1354,10 +1490,10 @@ const AddStudent = () => {
                       className="cursor-pointer flex flex-col items-center"
                     >
                       <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
                         Click to upload certificate
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
                         PDF, PNG, JPG up to 10MB
                       </span>
                     </label>
@@ -1397,10 +1533,10 @@ const AddStudent = () => {
                       className="cursor-pointer flex flex-col items-center"
                     >
                       <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
                         Click to upload certificate
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
                         PDF, PNG, JPG up to 10MB
                       </span>
                     </label>
@@ -1438,10 +1574,10 @@ const AddStudent = () => {
                       className="cursor-pointer flex flex-col items-center"
                     >
                       <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
                         Click to upload documents
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
                         PDF, PNG, JPG up to 10MB
                       </span>
                     </label>

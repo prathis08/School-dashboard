@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import Icons from "../../utils/icons";
 import {
   useClasses,
@@ -37,7 +39,7 @@ const Modal = ({
       onClick={handleBackdropClick}
     >
       <div
-        className="bg-white rounded-lg p-6 w-full max-w-md"
+        className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-xl font-bold text-gray-900 mb-4">
@@ -52,7 +54,7 @@ const Modal = ({
               name="grade"
               value={formData.grade}
               onChange={onInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               required
             >
               <option value="">Select Grade</option>
@@ -74,7 +76,9 @@ const Modal = ({
               onChange={onInputChange}
               placeholder="e.g., 10-A, 9-B"
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                formErrors.name ? "border-red-300" : "border-gray-300"
+                formErrors.name
+                  ? "border-red-300"
+                  : "border-gray-300 dark:border-gray-600"
               }`}
               required
             />
@@ -88,14 +92,13 @@ const Modal = ({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Class Teacher
+              Class Teacher (Optional)
             </label>
             <select
               name="teacher"
               value={formData.teacher}
               onChange={onInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="">Select a teacher</option>
               {availableTeachers.map((teacher) => (
@@ -117,7 +120,7 @@ const Modal = ({
               placeholder="e.g., 30"
               min="1"
               max="100"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
             <p className="text-gray-500 text-xs mt-1">
               Leave empty if no limit
@@ -127,7 +130,7 @@ const Modal = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-700"
             >
               Cancel
             </button>
@@ -145,11 +148,15 @@ const Modal = ({
 };
 
 const Classes = () => {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
   // Use TanStack Query hooks
   const {
     data: classesResponse = [],
     isLoading: loading,
     error,
+    refetch: refetchClasses,
   } = useClasses();
   const { data: teachersResponse = [] } = useTeacherNames();
   const { data: gradesResponse = [] } = useGradesOptions();
@@ -164,22 +171,23 @@ const Classes = () => {
     isOpen: false,
     classId: null,
     className: "",
+    errorMessage: "",
   });
 
   // Safely extract data from responses
   const classes = Array.isArray(classesResponse)
     ? classesResponse
     : Array.isArray(classesResponse?.data)
-    ? classesResponse.data
-    : [];
+      ? classesResponse.data
+      : [];
 
   const availableTeachers = Array.isArray(teachersResponse)
     ? teachersResponse
     : Array.isArray(teachersResponse?.data)
-    ? teachersResponse.data
-    : Array.isArray(teachersResponse?.data?.teachers)
-    ? teachersResponse.data.teachers
-    : [];
+      ? teachersResponse.data
+      : Array.isArray(teachersResponse?.data?.teachers)
+        ? teachersResponse.data.teachers
+        : [];
 
   const [editingClass, setEditingClass] = useState(null);
   const [formData, setFormData] = useState({
@@ -194,18 +202,39 @@ const Classes = () => {
   const apiGrades = Array.isArray(gradesResponse)
     ? gradesResponse
     : Array.isArray(gradesResponse?.data)
-    ? gradesResponse.data
-    : [];
+      ? gradesResponse.data
+      : [];
+
+  // API returns objects with {gradeId, grade}, extract grade strings for filter dropdown
+  const gradeStrings = apiGrades.map((g) =>
+    typeof g === "object" && g.grade ? g.grade : g,
+  );
+
+  // Full grade objects for modal dropdown (with gradeId)
+  const gradeOptions = apiGrades.map((g) =>
+    typeof g === "object" ? g : { gradeId: g, grade: g },
+  );
 
   const grades =
-    apiGrades.length > 0
-      ? ["All", ...apiGrades]
+    gradeStrings.length > 0
+      ? ["All", ...gradeStrings]
       : ["All", "Grade 9", "Grade 10", "Grade 11", "Grade 12"];
 
   const getGradeNumber = useCallback((gradeString) => {
     // Extract number from grade string (e.g., "Grade 9" -> "9", "Grade 10" -> "10")
     const match = gradeString.match(/\d+/);
     return match ? match[0] : gradeString;
+  }, []);
+
+  // Get prefix for class name based on grade (e.g., "Grade 9" -> "9", "LKG" -> "LKG")
+  const getGradePrefix = useCallback((gradeString) => {
+    // For grades with numbers (Grade 1, Grade 10), extract the number
+    const match = gradeString.match(/Grade\s*(\d+)/i);
+    if (match) {
+      return match[1];
+    }
+    // For non-numeric grades (LKG, UKG, Pre-Primary), use the full name but make it URL-safe
+    return gradeString.replace(/\s+/g, "-");
   }, []);
 
   const extractSectionFromClassName = useCallback((className) => {
@@ -224,20 +253,20 @@ const Classes = () => {
 
       // Check if class name already exists (case-insensitive)
       const existingClass = classes.find(
-        (cls) => cls.className?.toLowerCase() === name.toLowerCase()
+        (cls) => cls.className?.toLowerCase() === name.toLowerCase(),
       );
 
       // If editing, exclude the current class from duplicate check
       if (
         existingClass &&
-        (!editingClass || existingClass.id !== editingClass.id)
+        (!editingClass || existingClass.classId !== editingClass.classId)
       ) {
         return "A class with this name already exists";
       }
 
       return null;
     },
-    [classes, editingClass]
+    [classes, editingClass],
   );
 
   const handleInputChange = useCallback(
@@ -256,14 +285,14 @@ const Classes = () => {
           /-([a-z])/g,
           (match, letter) => {
             return "-" + letter.toUpperCase();
-          }
+          },
         );
       }
 
       // Handle grade selection - auto-populate class name
       if (name === "grade" && value && !editingClass) {
-        const gradeNumber = getGradeNumber(value);
-        const newClassName = `${gradeNumber}-`;
+        const gradePrefix = getGradePrefix(value);
+        const newClassName = `${gradePrefix}-`;
 
         setFormData((prev) => ({
           ...prev,
@@ -299,7 +328,7 @@ const Classes = () => {
         }
       }
     },
-    [formErrors, validateClassName, getGradeNumber, editingClass]
+    [formErrors, validateClassName, getGradePrefix, editingClass],
   );
 
   const handleSubmit = useCallback(
@@ -317,15 +346,22 @@ const Classes = () => {
       }
 
       try {
-        const gradeNumber = getGradeNumber(formData.grade);
         const section = extractSectionFromClassName(formData.name.trim());
+        // Find the selected grade object to get gradeId
+        const selectedGrade = gradeOptions.find(
+          (g) => g.grade === formData.grade,
+        );
 
         const requestData = {
           className: formData.name.trim(),
-          grade: gradeNumber,
+          grade: formData.grade, // Use full grade string (e.g., "Grade 9", "LKG")
+          gradeId: selectedGrade?.gradeId,
           section: section,
-          classTeacher: formData.teacher,
         };
+
+        if (formData.teacher) {
+          requestData.classTeacher = formData.teacher;
+        }
 
         // Only add maxStudents if it's provided
         if (formData.maxStudents && formData.maxStudents.trim() !== "") {
@@ -335,7 +371,7 @@ const Classes = () => {
         if (editingClass) {
           // Update existing class
           await updateClass.mutateAsync({
-            id: editingClass.id,
+            id: editingClass.classId,
             data: requestData,
           });
         } else {
@@ -344,6 +380,10 @@ const Classes = () => {
             data: requestData,
           });
         }
+
+        // Refetch classes after successful create/update
+        await refetchClasses();
+
         setIsModalOpen(false);
         setEditingClass(null);
         setFormData({ name: "", grade: "", teacher: "", maxStudents: "" });
@@ -352,7 +392,16 @@ const Classes = () => {
         console.error("Error submitting class:", err);
       }
     },
-    [editingClass, formData, updateClass, createClass, validateClassName]
+    [
+      editingClass,
+      formData,
+      updateClass,
+      createClass,
+      refetchClasses,
+      validateClassName,
+      gradeOptions,
+      extractSectionFromClassName,
+    ],
   );
 
   const handleCloseModal = useCallback(() => {
@@ -376,22 +425,44 @@ const Classes = () => {
   const handleDeleteClick = (classItem) => {
     setDeleteModal({
       isOpen: true,
-      classId: classItem.id,
+      classId: classItem.classId,
       className: classItem.className || "Unnamed Class",
+      errorMessage: "",
     });
   };
 
   const handleDeleteConfirm = async () => {
     try {
       await deleteClass.mutateAsync({ id: deleteModal.classId });
-      setDeleteModal({ isOpen: false, classId: null, className: "" });
+
+      // Refetch classes after successful delete
+      await refetchClasses();
+
+      setDeleteModal({
+        isOpen: false,
+        classId: null,
+        className: "",
+        errorMessage: "",
+      });
     } catch (err) {
       console.error("Error deleting class:", err);
+      // Extract error message from the error object
+      const errorMsg =
+        err?.message || "Failed to delete class. Please try again.";
+      setDeleteModal((prev) => ({
+        ...prev,
+        errorMessage: errorMsg,
+      }));
     }
   };
 
   const handleDeleteCancel = () => {
-    setDeleteModal({ isOpen: false, classId: null, className: "" });
+    setDeleteModal({
+      isOpen: false,
+      classId: null,
+      className: "",
+      errorMessage: "",
+    });
   };
 
   const openAddModal = () => {
@@ -425,19 +496,18 @@ const Classes = () => {
       : "No Teacher Assigned";
 
     const studentCount = classItem.students ? classItem.students.length : 0;
-    const enrollmentPercentage = classItem.maxStudents
-      ? Math.round((studentCount / classItem.maxStudents) * 100)
-      : 0;
 
     return (
       <div className="card hover:shadow-lg transition-shadow duration-200">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               {classItem.className || "Unnamed Class"}
             </h3>
-            <p className="text-gray-600">{classItem.grade || "No Grade"}</p>
-            <p className="text-sm text-gray-500">
+            <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
+              {classItem.grade || "No Grade"}
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
               {classItem.room || "No Room"}
             </p>
           </div>
@@ -458,71 +528,46 @@ const Classes = () => {
         </div>
 
         <div className="space-y-3">
-          <div className="flex items-center text-sm text-gray-600">
+          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
             <Icons.User className="w-4 h-4 mr-2" />
             Teacher: {teacherName}
           </div>
-          <div className="flex items-center text-sm text-gray-600">
+          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
             <Icons.Users className="w-4 h-4 mr-2" />
-            Students: {studentCount} / {classItem.maxStudents || 0}
+            Total Students: {studentCount}
           </div>
-          <div className="flex items-center text-sm text-gray-600">
+          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
             <Icons.MapPin className="w-4 h-4 mr-2" />
             Room: {classItem.room || "Not Assigned"}
           </div>
         </div>
 
-        <div className="mt-4">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-gray-600">Enrollment</span>
-            <span className="text-sm font-medium text-gray-900">
-              {enrollmentPercentage}%
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className={`h-2 rounded-full ${
-                enrollmentPercentage >= 90
-                  ? "bg-red-500"
-                  : enrollmentPercentage >= 75
-                  ? "bg-yellow-500"
-                  : "bg-green-500"
-              }`}
-              style={{ width: `${enrollmentPercentage}%` }}
-            ></div>
-          </div>
-        </div>
-
-        <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
             <div className="text-center">
-              <p className="text-sm font-semibold text-gray-900">
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">
                 {studentCount}
               </p>
-              <p className="text-xs text-gray-600">Enrolled</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500">
+                Enrolled
+              </p>
             </div>
             <div className="flex space-x-2">
-              <button className="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200">
+              <button
+                onClick={() =>
+                  navigate("/students", {
+                    state: {
+                      filterClass: classItem.className,
+                      filterGrade: classItem.grade,
+                    },
+                  })
+                }
+                className="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200"
+              >
                 View Students
-              </button>
-              <button className="px-3 py-1 text-xs bg-green-100 text-green-800 rounded-full hover:bg-green-200">
-                Schedule
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Status indicator */}
-        <div className="mt-3">
-          <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              classItem.is_active
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
-            }`}
-          >
-            {classItem.is_active ? "Active" : "Inactive"}
-          </span>
         </div>
       </div>
     );
@@ -532,7 +577,9 @@ const Classes = () => {
     <div className="stat-card">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500">
+            {title}
+          </p>
           <p className="text-2xl font-bold text-gray-900 mt-2">{value}</p>
         </div>
         <div className={`p-3 rounded-lg ${color}`}>
@@ -561,7 +608,9 @@ const Classes = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Classes</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Classes
+          </h1>
           <p className="text-gray-600 mt-1">
             Manage school classes and sections
           </p>
@@ -589,7 +638,7 @@ const Classes = () => {
             Array.isArray(classes)
               ? classes.reduce(
                   (sum, cls) => sum + (cls.students?.length || 0),
-                  0
+                  0,
                 )
               : 0
           }
@@ -603,8 +652,8 @@ const Classes = () => {
               ? Math.round(
                   classes.reduce(
                     (sum, cls) => sum + (cls.students?.length || 0),
-                    0
-                  ) / classes.length
+                    0,
+                  ) / classes.length,
                 )
               : 0
           }
@@ -629,19 +678,19 @@ const Classes = () => {
           <div className="flex-1">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Icons.Search className="h-5 w-5 text-gray-400" />
+                <Icons.Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
               </div>
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="Search classes or teachers..."
               />
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Icons.Filter className="w-5 h-5 text-gray-400" />
+            <Icons.Filter className="w-5 h-5 text-gray-400 dark:text-gray-500" />
             <select
               value={filterGrade}
               onChange={(e) => setFilterGrade(e.target.value)}
@@ -664,14 +713,14 @@ const Classes = () => {
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             Loading classes...
           </h3>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
             Please wait while we fetch the classes data
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredClasses.map((classItem) => (
-            <ClassCard key={classItem.id} classItem={classItem} />
+            <ClassCard key={classItem.classId} classItem={classItem} />
           ))}
         </div>
       )}
@@ -685,7 +734,7 @@ const Classes = () => {
               ? "No classes found in the system"
               : "No classes match your search criteria"}
           </h3>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
             {Array.isArray(classes) && classes.length === 0
               ? "Add classes to get started or check if the API is working properly"
               : "Try adjusting your search or filter criteria"}
@@ -725,6 +774,7 @@ const Classes = () => {
         itemName={deleteModal.className}
         confirmText="Delete Class"
         isLoading={deleteClass.isPending}
+        errorMessage={deleteModal.errorMessage}
       />
     </div>
   );

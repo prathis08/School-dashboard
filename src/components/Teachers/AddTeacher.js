@@ -223,7 +223,7 @@ const AddTeacher = () => {
           value={formData[name]}
           onChange={handleInputChange}
           className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            errors[name] ? "border-red-500" : "border-gray-300"
+            errors[name] ? "border-red-500" : "border-gray-300 dark:border-gray-600"
           }`}
         >
           <option value="">Select {label}</option>
@@ -241,7 +241,7 @@ const AddTeacher = () => {
           onChange={handleInputChange}
           rows="3"
           className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            errors[name] ? "border-red-500" : "border-gray-300"
+            errors[name] ? "border-red-500" : "border-gray-300 dark:border-gray-600"
           }`}
           placeholder={`Enter ${label.toLowerCase()}`}
         />
@@ -253,7 +253,7 @@ const AddTeacher = () => {
           value={formData[name]}
           onChange={handleInputChange}
           className={`w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            errors[name] ? "border-red-500" : "border-gray-300"
+            errors[name] ? "border-red-500" : "border-gray-300 dark:border-gray-600"
           }`}
           placeholder={
             type === "password"
@@ -280,7 +280,7 @@ const AddTeacher = () => {
             <Icons.ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               Add New Teacher
             </h1>
             <p className="text-gray-600 mt-1">Create a new teacher profile</p>
@@ -289,7 +289,7 @@ const AddTeacher = () => {
       </div>
 
       {/* Form */}
-      <div className="bg-white rounded-lg shadow-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
         <form onSubmit={handleSubmit} className="p-6 space-y-8">
           {/* Personal Information */}
           <div>
@@ -359,7 +359,7 @@ const AddTeacher = () => {
                     Choose Files
                   </label>
                 </div>
-                <p className="mt-2 text-xs text-gray-500">
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   Supported formats: PDF, DOC, DOCX, JPG, PNG (Max 5MB each)
                 </p>
                 {errors.documents && (
@@ -372,7 +372,7 @@ const AddTeacher = () => {
               {/* Document List */}
               {documents.length > 0 && (
                 <div className="space-y-2">
-                  <h3 className="text-sm font-medium text-gray-700">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Uploaded Documents:
                   </h3>
                   {documents.map((file, index) => (
@@ -381,12 +381,12 @@ const AddTeacher = () => {
                       className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
                     >
                       <div className="flex items-center space-x-3">
-                        <Icons.FileText className="w-4 h-4 text-gray-400" />
+                        <Icons.FileText className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                         <div>
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
                             {file.name}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
                             {(file.size / 1024 / 1024).toFixed(2)} MB
                           </p>
                         </div>
@@ -416,7 +416,7 @@ const AddTeacher = () => {
           )}
 
           {/* Form Actions */}
-          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={() => navigate("/teachers")}

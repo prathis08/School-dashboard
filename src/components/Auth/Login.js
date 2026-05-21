@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, GraduationCap, Mail, Lock } from "lucide-react";
 import { useLogin } from "../../hooks/useApiHooks";
@@ -15,6 +15,8 @@ import {
   setRefreshToken,
 } from "../../utils/cookies";
 
+const REMEMBERED_EMAIL_KEY = "rememberedEmail";
+
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -22,6 +24,17 @@ const Login = () => {
     password: "",
     rememberMe: false,
   });
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY);
+    if (savedEmail) {
+      setFormData((prev) => ({
+        ...prev,
+        email: savedEmail,
+        rememberMe: true,
+      }));
+    }
+  }, []);
   const [dashboardConfigError, setDashboardConfigError] = useState(null);
   const login = useLogin();
   const navigate = useNavigate();
@@ -43,7 +56,7 @@ const Login = () => {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` }),
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -101,6 +114,12 @@ const Login = () => {
       });
 
       if (response && response.success) {
+        if (formData.rememberMe) {
+          localStorage.setItem(REMEMBERED_EMAIL_KEY, formData.email);
+        } else {
+          localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+        }
+
         // Store the authentication token in cookies
         if (response.data?.accessToken) {
           setAuthToken(response.data.accessToken, formData.rememberMe ? 30 : 7); // 30 days if remember me, 7 days otherwise
@@ -112,7 +131,7 @@ const Login = () => {
         if (response.data?.refreshToken) {
           setRefreshToken(
             response.data.refreshToken,
-            formData.rememberMe ? 30 : 7
+            formData.rememberMe ? 30 : 7,
           );
           // Also store in localStorage for backward compatibility
           localStorage.setItem("refreshToken", response.data.refreshToken);
@@ -133,7 +152,7 @@ const Login = () => {
             setDashboardConfig(configResponse.data);
             console.log(
               "Dashboard config loaded successfully:",
-              configResponse.data
+              configResponse.data,
             );
             // Only navigate if config loaded successfully
             navigate("/dashboard");
@@ -175,7 +194,7 @@ const Login = () => {
 
           // Show error message and stay on login page for network errors
           setDashboardConfigError(
-            "Unable to connect to dashboard services. Please check your connection and try again."
+            "Unable to connect to dashboard services. Please check your connection and try again.",
           );
           return;
         }
@@ -190,35 +209,37 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-blue-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo and Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <div className="bg-blue-600 p-3 rounded-xl">
+            <div className="bg-blue-600 dark:bg-blue-500 p-3 rounded-xl">
               <GraduationCap className="w-8 h-8 text-white" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-800">SchoolHub</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
+            SchoolHub
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">
             Welcome back! Please sign in to your account
           </p>
         </div>
 
         {/* Login Form */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
               >
                 Email Address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
+                  <Mail className="h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                 </div>
                 <input
                   type="email"
@@ -226,7 +247,7 @@ const Login = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Enter your email"
                   required
                 />
@@ -237,13 +258,13 @@ const Login = () => {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
               >
                 Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+                  <Lock className="h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
@@ -251,7 +272,7 @@ const Login = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Enter your password"
                   required
                 />
@@ -261,9 +282,9 @@ const Login = () => {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400" />
+                    <EyeOff className="h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                   ) : (
-                    <Eye className="h-5 w-5 text-gray-400" />
+                    <Eye className="h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                   )}
                 </button>
               </div>
@@ -278,18 +299,18 @@ const Login = () => {
                   type="checkbox"
                   checked={formData.rememberMe}
                   onChange={handleInputChange}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded"
                 />
                 <label
                   htmlFor="rememberMe"
-                  className="ml-2 block text-sm text-gray-700"
+                  className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
                 >
                   Remember me
                 </label>
               </div>
               <button
                 type="button"
-                className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors duration-200"
               >
                 Forgot password?
               </button>
@@ -297,13 +318,13 @@ const Login = () => {
 
             {/* Error Messages */}
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
                 {error.message || error}
               </div>
             )}
 
             {dashboardConfigError && (
-              <div className="bg-orange-50 border border-orange-200 text-orange-700 px-4 py-3 rounded-lg text-sm">
+              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400 px-4 py-3 rounded-lg text-sm">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
                     <svg
@@ -330,7 +351,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-600 dark:bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <div className="flex items-center justify-center">
@@ -342,24 +363,12 @@ const Login = () => {
               )}
             </button>
 
-            {/* Demo Credentials */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600 mb-2 font-medium">
-                API Login:
-              </p>
-              <p className="text-xs text-gray-500">
-                Using real authentication API
-              </p>
-              <p className="text-xs text-gray-500">
-                Enter your registered credentials (email and password)
-              </p>
-            </div>
           </form>
         </div>
 
         {/* Footer */}
         {/* <div className="text-center mt-8">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
             Don't have an account?{" "}
             <button className="text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200">
               Contact Administrator
