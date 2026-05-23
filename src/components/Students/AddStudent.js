@@ -20,7 +20,6 @@ import {
   useGradesAndClasses,
   useTeacherNames,
 } from "../../hooks/useApiHooks";
-import { getSchoolId } from "../../utils/dashboardConfig";
 
 const AddStudent = () => {
   const navigate = useNavigate();
@@ -373,7 +372,6 @@ const AddStudent = () => {
         admissionDate: formData.admissionDate,
         status: formData.status,
         role: "student",
-        schoolId: getSchoolId() || "1", // Use utility function to get schoolId
         // Parent information
         fatherName: formData.fatherName,
         fatherPhone: formData.fatherPhone,
