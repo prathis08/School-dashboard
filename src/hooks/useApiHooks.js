@@ -14,8 +14,10 @@ import {
   systemApi,
   profileApi,
   settingsApi,
+  examinationsApi,
+  attendanceApi,
+  academicApi,
 } from "../services/apiClient";
-import { data } from "autoprefixer";
 
 // Authentication hooks
 export const useLogin = () => {
@@ -118,6 +120,12 @@ export const useDeleteTeacher = () => {
   return useApiMutation({
     mutationFn: ({ id }) => teachersApi.delete(id),
     invalidateQueries: [QUERY_KEYS.TEACHERS],
+  });
+};
+
+export const useResetTeacherPassword = () => {
+  return useApiMutation({
+    mutationFn: ({ id }) => teachersApi.resetPassword(id),
   });
 };
 
@@ -366,6 +374,195 @@ export const useAssignTeacherToSubject = () => {
       QUERY_KEYS.SUBJECTS,
       QUERY_KEYS.SUBJECT_DETAIL,
       QUERY_KEYS.TEACHERS,
+    ],
+  });
+};
+
+/* ---------- Examinations ---------- */
+
+export const useExams = (filters = {}) => {
+  return useApiQuery([QUERY_KEYS.EXAMS, filters], null, {
+    queryFn: () => examinationsApi.list(filters),
+  });
+};
+
+export const useExam = (examId, options = {}) => {
+  return useApiQuery([QUERY_KEYS.EXAM_DETAIL, examId], null, {
+    queryFn: () => examinationsApi.getById(examId),
+    enabled: !!examId,
+    ...options,
+  });
+};
+
+export const useExamStudents = (examId, options = {}) => {
+  return useApiQuery([QUERY_KEYS.EXAM_STUDENTS, examId], null, {
+    queryFn: () => examinationsApi.getStudents(examId),
+    enabled: !!examId,
+    ...options,
+  });
+};
+
+export const useExamResults = (examId, options = {}) => {
+  return useApiQuery([QUERY_KEYS.EXAM_RESULTS, examId], null, {
+    queryFn: () => examinationsApi.getResults(examId),
+    enabled: !!examId,
+    ...options,
+  });
+};
+
+export const useStudentReportCard = (studentId, filters = {}, options = {}) => {
+  return useApiQuery(
+    [QUERY_KEYS.STUDENT_REPORT_CARD, studentId, filters],
+    null,
+    {
+      queryFn: () => examinationsApi.getReportCard(studentId, filters),
+      enabled: !!studentId,
+      ...options,
+    },
+  );
+};
+
+export const useCreateExam = () => {
+  return useApiMutation({
+    mutationFn: ({ data }) => examinationsApi.create(data),
+    invalidateQueries: [QUERY_KEYS.EXAMS],
+  });
+};
+
+export const useUpdateExam = () => {
+  return useApiMutation({
+    mutationFn: ({ id, data }) => examinationsApi.update(id, data),
+    invalidateQueries: [QUERY_KEYS.EXAMS, QUERY_KEYS.EXAM_DETAIL],
+  });
+};
+
+export const useDeleteExam = () => {
+  return useApiMutation({
+    mutationFn: ({ id }) => examinationsApi.delete(id),
+    invalidateQueries: [QUERY_KEYS.EXAMS],
+  });
+};
+
+export const useSubmitMarks = () => {
+  return useApiMutation({
+    mutationFn: ({ examId, examSubjectId, entries }) =>
+      examinationsApi.submitMarks(examId, examSubjectId, entries),
+    invalidateQueries: [
+      QUERY_KEYS.EXAM_RESULTS,
+      QUERY_KEYS.STUDENT_REPORT_CARD,
+    ],
+  });
+};
+
+/* ---------- Attendance ---------- */
+
+export const useAttendanceRoster = (classId, date, options = {}) => {
+  return useApiQuery(
+    [QUERY_KEYS.ATTENDANCE_ROSTER, classId, date],
+    null,
+    {
+      queryFn: () => attendanceApi.getClassRoster(classId, date),
+      enabled: Boolean(classId),
+      ...options,
+    },
+  );
+};
+
+export const useMarkAttendance = () => {
+  return useApiMutation({
+    mutationFn: ({ data }) => attendanceApi.mark(data),
+    invalidateQueries: [
+      QUERY_KEYS.ATTENDANCE_ROSTER,
+      QUERY_KEYS.ATTENDANCE_SUMMARY,
+      QUERY_KEYS.STUDENT_ATTENDANCE_HISTORY,
+    ],
+  });
+};
+
+export const useAttendanceSummary = (filters = {}, options = {}) => {
+  return useApiQuery(
+    [QUERY_KEYS.ATTENDANCE_SUMMARY, filters],
+    null,
+    {
+      queryFn: () => attendanceApi.getSummary(filters),
+      ...options,
+    },
+  );
+};
+
+export const useStudentAttendanceHistory = (
+  studentId,
+  filters = {},
+  options = {},
+) => {
+  return useApiQuery(
+    [QUERY_KEYS.STUDENT_ATTENDANCE_HISTORY, studentId, filters],
+    null,
+    {
+      queryFn: () => attendanceApi.getStudentHistory(studentId, filters),
+      enabled: Boolean(studentId),
+      ...options,
+    },
+  );
+};
+
+/* ---------- Academic: enrollment + promotion ---------- */
+
+export const useStudentEnrollments = (studentId, options = {}) => {
+  return useApiQuery(
+    [QUERY_KEYS.STUDENT_ENROLLMENTS, studentId],
+    null,
+    {
+      queryFn: () => academicApi.getStudentEnrollments(studentId),
+      enabled: Boolean(studentId),
+      ...options,
+    },
+  );
+};
+
+export const useEnrollments = (filters = {}, options = {}) => {
+  return useApiQuery([QUERY_KEYS.ENROLLMENTS, filters], null, {
+    queryFn: () => academicApi.getEnrollments(filters),
+    ...options,
+  });
+};
+
+export const usePromotionRule = () => {
+  return useApiQuery(QUERY_KEYS.PROMOTION_RULE, null, {
+    queryFn: () => academicApi.getPromotionRule(),
+  });
+};
+
+export const useSavePromotionRule = () => {
+  return useApiMutation({
+    mutationFn: ({ data }) => academicApi.savePromotionRule(data),
+    invalidateQueries: [QUERY_KEYS.PROMOTION_RULE],
+  });
+};
+
+export const usePromotionPreview = (filters = {}, options = {}) => {
+  const enabled =
+    Boolean(filters.academicYearId) && Boolean(filters.gradeId);
+  return useApiQuery(
+    [QUERY_KEYS.PROMOTION_PREVIEW, filters],
+    null,
+    {
+      queryFn: () => academicApi.previewPromotions(filters),
+      enabled,
+      ...options,
+    },
+  );
+};
+
+export const useRunPromotion = () => {
+  return useApiMutation({
+    mutationFn: ({ data }) => academicApi.runPromotions(data),
+    invalidateQueries: [
+      QUERY_KEYS.PROMOTION_PREVIEW,
+      QUERY_KEYS.ENROLLMENTS,
+      QUERY_KEYS.STUDENT_ENROLLMENTS,
+      QUERY_KEYS.STUDENTS,
+      QUERY_KEYS.EXAMS,
     ],
   });
 };

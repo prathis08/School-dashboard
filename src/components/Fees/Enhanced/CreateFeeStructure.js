@@ -6,9 +6,7 @@ import {
   Calendar,
   Check,
   ChevronRight,
-  AlertCircle,
   Trash2,
-  X,
 } from "lucide-react";
 import {
   useEnhancedFeeTypes,
@@ -43,10 +41,9 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
     useEnhancedFeeTypes();
   const { data: activeYearData } = useEnhancedActiveYear();
   const { data: gradesData, isLoading: loadingGrades } = useGradesOptions();
-  const { data: schedulesData, isLoading: loadingSchedules } =
-    useGetSchedulesByGrade(activeYearData?.data?.academicYearId, gradeId, {
-      enabled: !!activeYearData?.data?.academicYearId && !!gradeId,
-    });
+  useGetSchedulesByGrade(activeYearData?.data?.academicYearId, gradeId, {
+    enabled: !!activeYearData?.data?.academicYearId && !!gradeId,
+  });
   const createFeeType = useCreateFeeType();
   const createGradeFeeStructure = useCreateGradeFeeStructure();
   const createQuarterlyMutation = useCreateQuarterlyScheduleForGrade();
@@ -55,7 +52,6 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
 
   const feeTypes = feeTypesData?.data || [];
   const activeYear = activeYearData?.data;
-  const schedules = schedulesData?.data || [];
   const grades = gradesData?.data || [];
 
   // Initialize form when editing
@@ -302,7 +298,7 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
   return (
     <div className="space-y-6">
       {/* Progress Steps */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between">
           {steps.map((step, index) => (
             <React.Fragment key={step.number}>
@@ -311,7 +307,7 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
                   className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
                     currentStep >= step.number
                       ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-600"
+                      : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                   }`}
                 >
                   {currentStep > step.number ? (
@@ -321,14 +317,14 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
                   )}
                 </div>
                 <div>
-                  <div className="font-medium text-gray-900">{step.title}</div>
-                  <div className="text-sm text-gray-500">
+                  <div className="font-medium text-gray-900 dark:text-white">{step.title}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
                     {step.description}
                   </div>
                 </div>
               </div>
               {index < steps.length - 1 && (
-                <ChevronRight className="w-6 h-6 text-gray-400 flex-shrink-0 mx-4" />
+                <ChevronRight className="w-6 h-6 text-gray-400 dark:text-gray-500 flex-shrink-0 mx-4" />
               )}
             </React.Fragment>
           ))}
@@ -337,9 +333,9 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
 
       {/* Step Content */}
       {currentStep === 1 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Select or Create Fee Types
             </h3>
             <button
@@ -353,7 +349,7 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
 
           {/* Quick Create Templates */}
           <div className="mb-6">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
               Quick Create Templates
             </h4>
             <div className="flex flex-wrap gap-2">
@@ -365,7 +361,7 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
                     createFeeType.isPending ||
                     feeTypes.some((ft) => ft.name === type.name)
                   }
-                  className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   + {type.name}
                 </button>
@@ -375,15 +371,15 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
 
           {/* Existing Fee Types */}
           <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-3">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
               Available Fee Types
             </h4>
             {loadingFeeTypes ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 Loading fee types...
               </div>
             ) : feeTypes.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 No fee types available. Create one to get started.
               </div>
             ) : (
@@ -394,32 +390,32 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
                     onClick={() => handleFeeTypeToggle(feeType.feeTypeId)}
                     className={`p-4 border rounded-lg cursor-pointer transition-all ${
                       selectedFeeTypes.includes(feeType.feeTypeId)
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
+                        ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-500"
                     }`}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center space-x-2">
-                        <Layers className="w-5 h-5 text-blue-600" />
-                        <h5 className="font-semibold text-gray-900">
+                        <Layers className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <h5 className="font-semibold text-gray-900 dark:text-white">
                           {feeType.name}
                         </h5>
                       </div>
                       {selectedFeeTypes.includes(feeType.feeTypeId) && (
-                        <Check className="w-5 h-5 text-blue-600" />
+                        <Check className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mb-3">
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
                       {feeType.description}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {feeType.isMandatory && (
-                        <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
+                        <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-1 rounded">
                           Mandatory
                         </span>
                       )}
                       {feeType.isOneTime && (
-                        <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
+                        <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 px-2 py-1 rounded">
                           One-Time
                         </span>
                       )}
@@ -443,8 +439,8 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
       )}
 
       {currentStep === 2 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
             {isEditMode
               ? "Edit Fee Structure"
               : "Assign Fee Structure to Grade"}
@@ -453,17 +449,17 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
           <div className="space-y-6">
             {/* Grade Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Grade <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                Select Grade <span className="text-red-500 dark:text-red-400">*</span>
               </label>
               {loadingGrades ? (
-                <div className="text-sm text-gray-500">Loading grades...</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">Loading grades...</div>
               ) : (
                 <select
                   value={gradeId}
                   onChange={(e) => setGradeId(e.target.value)}
                   disabled={isEditMode}
-                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isEditMode ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                  className={`w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent ${isEditMode ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" : ""}`}
                 >
                   <option value="">Choose a grade</option>
                   {grades.map((grade) => (
@@ -474,7 +470,7 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
                 </select>
               )}
               {isEditMode && (
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   Grade cannot be changed when editing. Delete and create a new
                   structure for a different grade.
                 </p>
@@ -484,11 +480,11 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
             {/* Fee Types Selection - Available in Edit Mode */}
             {gradeId && isEditMode && (
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
                   Add/Remove Fee Types
                 </label>
-                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                  <p className="text-sm text-gray-600 mb-3">
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
                     Click on fee types below to add them to the structure
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -498,10 +494,10 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
                         <button
                           key={feeType.feeTypeId}
                           onClick={() => handleFeeTypeToggle(feeType.feeTypeId)}
-                          className="flex items-center space-x-1 px-3 py-2 bg-white border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                          className="flex items-center space-x-1 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
                         >
-                          <Plus className="w-4 h-4 text-blue-600" />
-                          <span className="text-sm text-gray-700">
+                          <Plus className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          <span className="text-sm text-gray-700 dark:text-gray-200">
                             {feeType.name}
                           </span>
                         </button>
@@ -509,7 +505,7 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
                     {feeTypes.filter(
                       (ft) => !selectedFeeTypes.includes(ft.feeTypeId),
                     ).length === 0 && (
-                      <p className="text-sm text-gray-500 italic">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 italic">
                         All fee types are already added
                       </p>
                     )}
@@ -521,16 +517,16 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
             {/* Fee Amounts */}
             {gradeId && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
                   {isEditMode
                     ? "Selected Fee Types & Amounts"
                     : "Set Fee Amounts"}{" "}
-                  <span className="text-red-500">*</span>
+                  <span className="text-red-500 dark:text-red-400">*</span>
                 </label>
                 {selectedFeeTypes.length === 0 ? (
-                  <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
-                    <Layers className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-500">
+                  <div className="text-center py-8 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <Layers className="w-8 h-8 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
+                    <p className="text-gray-500 dark:text-gray-400">
                       No fee types selected. Add fee types from above.
                     </p>
                   </div>
@@ -545,26 +541,26 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
                       return (
                         <div
                           key={feeTypeId}
-                          className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                          className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg"
                         >
                           <div className="flex-1">
                             <div className="flex items-center space-x-2">
-                              <span className="font-medium text-gray-900">
+                              <span className="font-medium text-gray-900 dark:text-white">
                                 {feeType.name}
                               </span>
                               {feeType.isMandatory && (
-                                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
+                                <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-1 rounded">
                                   Mandatory
                                 </span>
                               )}
                             </div>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
                               {feeType.description}
                             </p>
                           </div>
                           <div className="flex items-center space-x-3 ml-4">
                             <div className="flex items-center space-x-2">
-                              <IndianRupee className="w-4 h-4 text-gray-400" />
+                              <IndianRupee className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                               <input
                                 type="number"
                                 value={feeAmounts[feeTypeId] || ""}
@@ -572,13 +568,13 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
                                   handleAmountChange(feeTypeId, e.target.value)
                                 }
                                 placeholder="0.00"
-                                className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                               />
                             </div>
                             {isEditMode && (
                               <button
                                 onClick={() => handleFeeTypeToggle(feeTypeId)}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                 title="Remove fee type"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -592,12 +588,12 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
                 )}
 
                 {/* Total Amount */}
-                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                   <div className="flex items-center justify-between">
-                    <span className="text-lg font-semibold text-gray-900">
+                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
                       Total Fee Amount
                     </span>
-                    <span className="text-2xl font-bold text-blue-600">
+                    <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                       ₹{getTotalAmount().toFixed(2)}
                     </span>
                   </div>
@@ -612,14 +608,14 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
                 onClick={() => {
                   if (onEditComplete) onEditComplete();
                 }}
-                className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                className="px-6 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
               >
                 Cancel Edit
               </button>
             ) : (
               <button
                 onClick={() => setCurrentStep(1)}
-                className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                className="px-6 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
               >
                 Back
               </button>
@@ -637,11 +633,11 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
 
       {/* Step 3: Create Installment Schedule */}
       {currentStep === 3 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
             Create Installment Schedule
           </h3>
-          <p className="text-sm text-gray-600 mb-6">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
             Choose how fees will be split into installments for{" "}
             {grades.find((g) => g.gradeId === gradeId)?.grade ||
               "selected grade"}
@@ -650,50 +646,50 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
           <div className="space-y-4">
             {/* Schedule Type Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Schedule Type <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
+                Schedule Type <span className="text-red-500 dark:text-red-400">*</span>
               </label>
               <div className="space-y-3">
-                <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <label className="flex items-center p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                   <input
                     type="radio"
                     name="scheduleType"
                     value="quarterly"
                     checked={scheduleType === "quarterly"}
                     onChange={(e) => setScheduleType(e.target.value)}
-                    className="w-5 h-5 text-blue-600"
+                    className="w-5 h-5 text-blue-600 dark:text-blue-400"
                   />
                   <div className="ml-4">
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-gray-900 dark:text-white">
                       Quarterly Schedule
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       4 installments per year - Q1 (Jul-Sep), Q2 (Oct-Dec), Q3
                       (Jan-Mar), Q4 (Apr-Jun)
                     </p>
-                    <p className="text-sm text-blue-600 mt-1">
+                    <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
                       Each installment: ₹{(getTotalAmount() / 4).toFixed(2)}
                     </p>
                   </div>
                 </label>
 
-                <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <label className="flex items-center p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                   <input
                     type="radio"
                     name="scheduleType"
                     value="monthly"
                     checked={scheduleType === "monthly"}
                     onChange={(e) => setScheduleType(e.target.value)}
-                    className="w-5 h-5 text-blue-600"
+                    className="w-5 h-5 text-blue-600 dark:text-blue-400"
                   />
                   <div className="ml-4">
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-gray-900 dark:text-white">
                       Monthly Schedule
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       12 installments per year - One payment due each month
                     </p>
-                    <p className="text-sm text-blue-600 mt-1">
+                    <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
                       Each installment: ₹{(getTotalAmount() / 12).toFixed(2)}
                     </p>
                   </div>
@@ -702,15 +698,15 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
             </div>
 
             {/* Schedule Summary */}
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
               <div className="flex items-start space-x-3">
-                <Calendar className="w-5 h-5 text-blue-600 mt-0.5" />
+                <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                 <div>
-                  <div className="font-medium text-blue-900">
+                  <div className="font-medium text-blue-900 dark:text-blue-200">
                     {scheduleType === "quarterly" ? "Quarterly" : "Monthly"}{" "}
                     Payment Plan
                   </div>
-                  <p className="text-sm text-blue-700 mt-1">
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
                     Total: ₹{getTotalAmount().toFixed(2)} split into{" "}
                     {scheduleType === "quarterly"
                       ? "4 quarterly"
@@ -725,7 +721,7 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
           <div className="flex justify-between mt-6">
             <button
               onClick={() => setCurrentStep(2)}
-              className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              className="px-6 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
             >
               Back
             </button>
@@ -740,24 +736,24 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
       )}
 
       {currentStep === 4 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
             Review Fee Structure
           </h3>
 
           <div className="space-y-6">
             {/* Academic Year */}
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <div className="text-sm text-gray-600 mb-1">Academic Year</div>
-              <div className="font-semibold text-gray-900">
+            <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+              <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">Academic Year</div>
+              <div className="font-semibold text-gray-900 dark:text-white">
                 {activeYear?.name}
               </div>
             </div>
 
             {/* Grade */}
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <div className="text-sm text-gray-600 mb-1">Grade</div>
-              <div className="font-semibold text-gray-900">
+            <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+              <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">Grade</div>
+              <div className="font-semibold text-gray-900 dark:text-white">
                 {(
                   grades.find((g) => g.gradeId === gradeId)?.grade || "Unknown"
                 ).replace(/^Grade\s+/i, "")}
@@ -765,8 +761,8 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
             </div>
 
             {/* Fee Breakdown */}
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <div className="text-sm text-gray-600 mb-3">Fee Breakdown</div>
+            <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+              <div className="text-sm text-gray-600 dark:text-gray-300 mb-3">Fee Breakdown</div>
               <div className="space-y-2">
                 {selectedFeeTypes.map((feeTypeId) => {
                   const feeType = feeTypes.find(
@@ -779,16 +775,16 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
                       key={feeTypeId}
                       className="flex justify-between items-center"
                     >
-                      <span className="text-gray-900">{feeType.name}</span>
-                      <span className="font-medium text-gray-900">
+                      <span className="text-gray-900 dark:text-white">{feeType.name}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">
                         ₹{feeAmounts[feeTypeId]?.toFixed(2) || "0.00"}
                       </span>
                     </div>
                   );
                 })}
-                <div className="pt-2 border-t border-gray-300 flex justify-between items-center">
-                  <span className="font-semibold text-gray-900">Total</span>
-                  <span className="text-xl font-bold text-blue-600">
+                <div className="pt-2 border-t border-gray-300 dark:border-gray-600 flex justify-between items-center">
+                  <span className="font-semibold text-gray-900 dark:text-white">Total</span>
+                  <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
                     ₹{getTotalAmount().toFixed(2)}
                   </span>
                 </div>
@@ -796,19 +792,19 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
             </div>
 
             {/* Installment Info */}
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
               <div className="flex items-start space-x-3">
-                <Calendar className="w-5 h-5 text-blue-600 mt-0.5" />
+                <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                 <div>
-                  <div className="font-medium text-blue-900 mb-1">
+                  <div className="font-medium text-blue-900 dark:text-blue-200 mb-1">
                     Installment Schedule
                   </div>
-                  <div className="text-sm text-blue-700">
+                  <div className="text-sm text-blue-700 dark:text-blue-300">
                     • {scheduleType === "quarterly" ? "Quarterly" : "Monthly"}{" "}
                     Schedule with {scheduleType === "quarterly" ? "4" : "12"}{" "}
                     installments
                   </div>
-                  <div className="text-sm text-blue-700 mt-1">
+                  <div className="text-sm text-blue-700 dark:text-blue-300 mt-1">
                     • Each installment: ₹
                     {(
                       getTotalAmount() / (scheduleType === "quarterly" ? 4 : 12)
@@ -822,7 +818,7 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
           <div className="flex justify-between mt-6">
             <button
               onClick={() => setCurrentStep(3)}
-              className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              className="px-6 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
             >
               Back
             </button>
@@ -862,15 +858,15 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
       {/* Custom Fee Type Modal */}
       {showFeeTypeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Create Custom Fee Type
             </h3>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Name <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  Name <span className="text-red-500 dark:text-red-400">*</span>
                 </label>
                 <input
                   type="text"
@@ -878,13 +874,13 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
                   onChange={(e) =>
                     setNewFeeType({ ...newFeeType, name: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                   placeholder="e.g., Field Trip Fee"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Description
                 </label>
                 <textarea
@@ -896,7 +892,7 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
                     })
                   }
                   rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
                   placeholder="Describe this fee type..."
                 />
               </div>
@@ -912,9 +908,9 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
                         isMandatory: e.target.checked,
                       })
                     }
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400"
                   />
-                  <span className="text-sm text-gray-700">Mandatory</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-200">Mandatory</span>
                 </label>
 
                 <label className="flex items-center space-x-2">
@@ -927,9 +923,9 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
                         isOneTime: e.target.checked,
                       })
                     }
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:focus:ring-blue-400"
                   />
-                  <span className="text-sm text-gray-700">One-Time</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-200">One-Time</span>
                 </label>
               </div>
             </div>
@@ -945,7 +941,7 @@ const CreateFeeStructure = ({ editData, onEditComplete }) => {
                     isOneTime: false,
                   });
                 }}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
               >
                 Cancel
               </button>

@@ -1,16 +1,23 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Icons from "../../utils/icons";
-import { useStudent } from "../../hooks/useApiHooks";
+import { useStudent, useStudentEnrollments } from "../../hooks/useApiHooks";
 
 const StudentDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
   const { data: studentResponse, isLoading: loading, error } = useStudent(id);
+  const { data: enrollmentsResp } = useStudentEnrollments(id);
 
   // Extract student data from response
   const student = studentResponse?.data || studentResponse;
+
+  const enrollments = (() => {
+    const raw = enrollmentsResp?.data ?? enrollmentsResp ?? [];
+    const list = Array.isArray(raw) ? raw : [];
+    return [...list].reverse();
+  })();
 
   if (loading) {
     return (
@@ -174,6 +181,15 @@ const StudentDetail = () => {
           >
             <Icons.Edit className="w-4 h-4 mr-2" />
             Edit Student
+          </button>
+          <button
+            onClick={() =>
+              navigate(`/examinations/students/${id}/report-card`)
+            }
+            className="btn-secondary flex items-center"
+          >
+            <Icons.ClipboardList className="w-4 h-4 mr-2" />
+            Report Card
           </button>
           <button className="btn-primary flex items-center">
             <Icons.Printer className="w-4 h-4 mr-2" />
@@ -601,6 +617,67 @@ const StudentDetail = () => {
               </div>
             )}
         </InfoCard>
+      </div>
+
+      {/* Academic Year History */}
+      <div className="card">
+        <div className="flex items-center mb-4">
+          <Icons.Calendar className="w-5 h-5 text-blue-600 mr-2" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Academic Year History
+          </h3>
+        </div>
+
+        {enrollments.length === 0 ? (
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            No per-year enrollment records yet. They are created when promotions
+            run, or when an enrollment is added for this student.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700/50">
+                <tr>
+                  {["Academic Year", "Class", "Grade", "Status", "Final %"].map(
+                    (h) => (
+                      <th
+                        key={h}
+                        className="px-3 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase"
+                      >
+                        {h}
+                      </th>
+                    ),
+                  )}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {enrollments.map((e) => (
+                  <tr key={e.enrollmentId}>
+                    <td className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-white">
+                      {e.academicYearName || e.academicYearId}
+                    </td>
+                    <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-200">
+                      {e.className || e.classId || "—"}
+                    </td>
+                    <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-200">
+                      {e.grade || e.gradeId || "—"}
+                    </td>
+                    <td className="px-3 py-2 text-sm">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                        {e.status}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-200">
+                      {e.finalPercentage != null
+                        ? `${e.finalPercentage}%`
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Quick Actions */}

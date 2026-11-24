@@ -9,6 +9,18 @@ import {
   useDeleteSubject,
 } from "../../hooks/useApiHooks";
 import { useToast, useConfirm } from "../../context/UIProvider";
+import { Modal, LoadingState, ErrorState, EmptyState } from "../Common";
+import { extractList } from "../../utils/apiResponse";
+
+const EMPTY_SUBJECT_FORM = Object.freeze({
+  subjectName: "",
+  subjectCode: "",
+  department: "",
+  description: "",
+  credits: 3,
+  syllabus: "",
+  teachers: [],
+});
 
 const Subjects = () => {
   const navigate = useNavigate();
@@ -30,18 +42,8 @@ const Subjects = () => {
   const loading = subjectsLoading || teachersLoading;
   const error = subjectsError;
 
-  // Safely extract data from responses - updated for new API structure
-  const subjects = Array.isArray(subjectsData?.data)
-    ? subjectsData.data
-    : Array.isArray(subjectsData)
-      ? subjectsData
-      : [];
-
-  const availableTeachers = Array.isArray(teachersResponse)
-    ? teachersResponse
-    : Array.isArray(teachersResponse?.data)
-      ? teachersResponse.data
-      : [];
+  const subjects = extractList(subjectsData);
+  const availableTeachers = extractList(teachersResponse, "teachers");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("All");
@@ -59,21 +61,13 @@ const Subjects = () => {
     "Physical Education",
   ];
 
-  const [formData, setFormData] = useState({
-    subject_name: "",
-    subject_code: "",
-    department: "",
-    description: "",
-    credits: 3,
-    syllabus: "",
-    teachers: [],
-  });
+  const [formData, setFormData] = useState(EMPTY_SUBJECT_FORM);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === "subjectCode" ? value.toUpperCase() : value,
     }));
   };
 
@@ -108,9 +102,13 @@ const Subjects = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate that at least one teacher is selected
     if (formData.teachers.length === 0) {
       toast.warning("Please select at least one teacher for this subject.");
+      return;
+    }
+
+    if (!/^[A-Z0-9]+$/.test(formData.subjectCode)) {
+      toast.warning("Subject code must contain only uppercase letters and numbers.");
       return;
     }
 
@@ -121,23 +119,11 @@ const Subjects = () => {
           data: formData,
         });
       } else {
-        // Add new subject
-        await createSubject.mutateAsync({
-          data: {
-            ...formData,
-            students: 0, // New subject starts with 0 students
-          },
-        });
+        await createSubject.mutateAsync({ data: formData });
       }
       setIsModalOpen(false);
       setEditingSubject(null);
-      setFormData({
-        name: "",
-        code: "",
-        grade: "",
-        teachers: [],
-        description: "",
-      });
+      setFormData(EMPTY_SUBJECT_FORM);
     } catch (error) {
       console.error("Error saving subject:", error);
       toast.error("Failed to save subject. Please try again.");
@@ -197,8 +183,8 @@ const Subjects = () => {
   const handleEdit = (subject) => {
     setEditingSubject(subject);
     setFormData({
-      subject_name: subject.subjectName || subject.subject_name || "",
-      subject_code: subject.subjectCode || subject.subject_code || "",
+      subjectName: subject.subjectName || subject.subject_name || "",
+      subjectCode: subject.subjectCode || subject.subject_code || "",
       department: subject.department || "",
       description: subject.description || "",
       credits: subject.credits || 3,
@@ -227,15 +213,7 @@ const Subjects = () => {
 
   const openAddModal = () => {
     setEditingSubject(null);
-    setFormData({
-      subject_name: "",
-      subject_code: "",
-      department: "",
-      description: "",
-      credits: 3,
-      syllabus: "",
-      teachers: [],
-    });
+    setFormData(EMPTY_SUBJECT_FORM);
     setIsModalOpen(true);
   };
 
@@ -356,21 +334,21 @@ const Subjects = () => {
     </div>
   );
 
-  const Modal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">
-          {editingSubject ? "Edit Subject" : "Add New Subject"}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+  const SubjectFormModal = () => (
+    <Modal
+      isOpen={isModalOpen}
+      onClose={() => setIsModalOpen(false)}
+      title={editingSubject ? "Edit Subject" : "Add New Subject"}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Subject Name
             </label>
             <input
               type="text"
-              name="subject_name"
-              value={formData.subject_name}
+              name="subjectName"
+              value={formData.subjectName}
               onChange={handleInputChange}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Enter subject name"
@@ -383,11 +361,15 @@ const Subjects = () => {
             </label>
             <input
               type="text"
-              name="subject_code"
-              value={formData.subject_code}
+              name="subjectCode"
+              value={formData.subjectCode}
               onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              placeholder="Enter subject code"
+              pattern="[A-Z0-9]+"
+              minLength={2}
+              maxLength={10}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 uppercase"
+              placeholder="e.g. MATH101 (A-Z, 0-9 only)"
+              title="Uppercase letters and numbers only, 2-10 chars"
               required
             />
           </div>
@@ -420,7 +402,7 @@ const Subjects = () => {
               value={formData.credits}
               onChange={handleInputChange}
               min="1"
-              max="6"
+              max="10"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               required
             />
@@ -521,8 +503,7 @@ const Subjects = () => {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 
   const StatsCard = ({ title, value, icon: Icon, color }) => (
@@ -544,24 +525,11 @@ const Subjects = () => {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <LoadingState message="Loading subjects..." size="lg" />;
   }
 
   if (error) {
-    return (
-      <div className="text-center py-12">
-        <div className="text-red-500 text-xl mb-4">
-          <Icons.AlertTriangle className="w-8 h-8" />
-        </div>
-        <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
-          Error loading subjects data
-        </p>
-      </div>
-    );
+    return <ErrorState error={error} title="Error loading subjects" />;
   }
 
   // Get unique departments from subjects for stats
@@ -662,21 +630,16 @@ const Subjects = () => {
         ))}
       </div>
 
-      {/* Empty State */}
       {filteredSubjects.length === 0 && (
-        <div className="text-center py-12">
-          <Icons.BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No subjects found
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
-            Try adjusting your search or filter criteria
-          </p>
-        </div>
+        <EmptyState
+          icon={Icons.BookOpen}
+          title="No subjects found"
+          description="Try adjusting your search or filter criteria"
+        />
       )}
 
       {/* Modal */}
-      {isModalOpen && <Modal />}
+      {isModalOpen && SubjectFormModal()}
     </div>
   );
 };

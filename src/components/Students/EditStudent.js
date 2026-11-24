@@ -4,9 +4,6 @@ import {
   ArrowLeft,
   Save,
   User,
-  Mail,
-  Phone,
-  Calendar,
   MapPin,
   GraduationCap,
   Users,
@@ -14,13 +11,141 @@ import {
   AlertCircle,
   School,
   Upload,
-  Paperclip,
 } from "lucide-react";
 import {
   useStudent,
   useUpdateStudent,
   useTeacherNames,
 } from "../../hooks/useApiHooks";
+
+/* ------------------------------------------------------------------ */
+/* Presentational sub-components — defined at module scope so React    */
+/* keeps the same component identity across parent re-renders. If      */
+/* these were declared inside EditStudent, every keystroke would       */
+/* unmount and remount the input subtree, blowing away cursor focus.   */
+/* ------------------------------------------------------------------ */
+
+const FormSection = ({ title, icon: Icon, children }) => (
+  <div className="card">
+    <div className="flex items-center mb-6">
+      <Icon className="w-5 h-5 text-blue-600 mr-2" />
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+        {title}
+      </h2>
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{children}</div>
+  </div>
+);
+
+const InputField = ({
+  label,
+  name,
+  type = "text",
+  required = false,
+  placeholder,
+  value,
+  onChange,
+  error,
+  options,
+  disabled = false,
+}) => (
+  <div className="space-y-1">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    {type === "select" ? (
+      <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          error ? "border-red-500" : "border-gray-300 dark:border-gray-600"
+        } ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+      >
+        <option value="">Select {label}</option>
+        {options?.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    ) : type === "textarea" ? (
+      <textarea
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        disabled={disabled}
+        rows={3}
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          error ? "border-red-500" : "border-gray-300 dark:border-gray-600"
+        } ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+      />
+    ) : (
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        disabled={disabled}
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          error ? "border-red-500" : "border-gray-300 dark:border-gray-600"
+        } ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+      />
+    )}
+    {error && (
+      <p className="text-sm text-red-600">
+        {error.message || error.toString()}
+      </p>
+    )}
+  </div>
+);
+
+const FileUpload = ({ label, name, accept, onChange, file, onRemove }) => (
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      {label}
+    </label>
+    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+      {file ? (
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+            {file.name}
+          </span>
+          <button
+            type="button"
+            onClick={onRemove}
+            className="text-red-500 hover:text-red-700"
+          >
+            ×
+          </button>
+        </div>
+      ) : (
+        <div>
+          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+            Click to upload or drag and drop
+          </p>
+          <input
+            type="file"
+            accept={accept}
+            onChange={(e) => onChange(e, name)}
+            className="hidden"
+            id={name}
+          />
+          <label
+            htmlFor={name}
+            className="mt-2 inline-block px-4 py-2 bg-blue-50 text-blue-600 rounded-lg cursor-pointer hover:bg-blue-100"
+          >
+            Choose File
+          </label>
+        </div>
+      )}
+    </div>
+  </div>
+);
 
 const EditStudent = () => {
   const navigate = useNavigate();
@@ -454,130 +579,8 @@ const EditStudent = () => {
     }
   };
 
-  const FormSection = ({ title, icon: Icon, children }) => (
-    <div className="card">
-      <div className="flex items-center mb-6">
-        <Icon className="w-5 h-5 text-blue-600 mr-2" />
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-          {title}
-        </h2>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{children}</div>
-    </div>
-  );
-
-  const InputField = ({
-    label,
-    name,
-    type = "text",
-    required = false,
-    placeholder,
-    value,
-    onChange,
-    error,
-    options,
-    disabled = false,
-  }) => (
-    <div className="space-y-1">
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      {type === "select" ? (
-        <select
-          name={name}
-          value={value}
-          onChange={onChange}
-          disabled={disabled}
-          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            error ? "border-red-500" : "border-gray-300 dark:border-gray-600"
-          } ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
-        >
-          <option value="">Select {label}</option>
-          {options?.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      ) : type === "textarea" ? (
-        <textarea
-          name={name}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          disabled={disabled}
-          rows={3}
-          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            error ? "border-red-500" : "border-gray-300 dark:border-gray-600"
-          } ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
-        />
-      ) : (
-        <input
-          type={type}
-          name={name}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          disabled={disabled}
-          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            error ? "border-red-500" : "border-gray-300 dark:border-gray-600"
-          } ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
-        />
-      )}
-      {error && (
-        <p className="text-sm text-red-600">
-          {error.message || error.toString()}
-        </p>
-      )}
-    </div>
-  );
-
-  const FileUpload = ({ label, name, accept, onChange, file, onRemove }) => (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-        {label}
-      </label>
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-        {file ? (
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
-              {file.name}
-            </span>
-            <button
-              type="button"
-              onClick={onRemove}
-              className="text-red-500 hover:text-red-700"
-            >
-              ×
-            </button>
-          </div>
-        ) : (
-          <div>
-            <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
-              Click to upload or drag and drop
-            </p>
-            <input
-              type="file"
-              accept={accept}
-              onChange={(e) => onChange(e, name)}
-              className="hidden"
-              id={name}
-            />
-            <label
-              htmlFor={name}
-              className="mt-2 inline-block px-4 py-2 bg-blue-50 text-blue-600 rounded-lg cursor-pointer hover:bg-blue-100"
-            >
-              Choose File
-            </label>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center">

@@ -115,6 +115,8 @@ import {
   School,
   Moon,
   Sun,
+  ClipboardList,
+  ClipboardCheck,
 } from "lucide-react";
 
 // Export all icons from a single source
@@ -269,6 +271,10 @@ export const Icons = {
   // Theme
   Moon,
   Sun,
+
+  // Examinations
+  ClipboardList,
+  ClipboardCheck,
 };
 
 // Helper function to get icon by name (optional)

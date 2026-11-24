@@ -1,6 +1,5 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import Icons from "../../utils/icons";
 import {
   useClasses,
@@ -10,11 +9,15 @@ import {
   useTeacherNames,
   useGradesOptions,
 } from "../../hooks/useApiHooks";
-import { stringify } from "postcss";
-import DeleteConfirmationModal from "../Common/DeleteConfirmationModal";
+import {
+  Modal,
+  LoadingState,
+  ErrorState,
+  EmptyState,
+  DeleteConfirmationModal,
+} from "../Common";
 
-// Modal component moved outside to prevent re-rendering
-const Modal = ({
+const ClassFormModal = ({
   isOpen,
   editingClass,
   formData,
@@ -24,28 +27,13 @@ const Modal = ({
   onInputChange,
   onSubmit,
   onClose,
-}) => {
-  if (!isOpen) return null;
-
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      onClick={handleBackdropClick}
-    >
-      <div
-        className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="text-xl font-bold text-gray-900 mb-4">
-          {editingClass ? "Edit Class" : "Add New Class"}
-        </h2>
-        <form onSubmit={onSubmit} className="space-y-4">
+}) => (
+  <Modal
+    isOpen={isOpen}
+    onClose={onClose}
+    title={editingClass ? "Edit Class" : "Add New Class"}
+  >
+      <form onSubmit={onSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Grade
@@ -142,16 +130,12 @@ const Modal = ({
             </button>
           </div>
         </form>
-      </div>
-    </div>
-  );
-};
+  </Modal>
+);
 
 const Classes = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
-  // Use TanStack Query hooks
   const {
     data: classesResponse = [],
     isLoading: loading,
@@ -592,17 +576,11 @@ const Classes = () => {
   return (
     <div className="space-y-6">
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg flex items-center justify-between">
-          <span>
-            Error loading classes: {error.message || error.toString()}
-          </span>
-          <button
-            onClick={() => window.location.reload()}
-            className="text-red-700 hover:text-red-900 underline"
-          >
-            Retry
-          </button>
-        </div>
+        <ErrorState
+          error={error}
+          title="Error loading classes"
+          onRetry={() => refetchClasses()}
+        />
       )}
 
       {/* Header */}
@@ -706,17 +684,8 @@ const Classes = () => {
         </div>
       </div>
 
-      {/* Classes Grid */}
       {loading ? (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Loading classes...
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
-            Please wait while we fetch the classes data
-          </p>
-        </div>
+        <LoadingState message="Loading classes..." size="lg" />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredClasses.map((classItem) => (
@@ -725,34 +694,34 @@ const Classes = () => {
         </div>
       )}
 
-      {/* Empty State */}
       {!loading && filteredClasses.length === 0 && (
-        <div className="text-center py-12">
-          <Icons.School className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {Array.isArray(classes) && classes.length === 0
+        <EmptyState
+          icon={Icons.School}
+          title={
+            Array.isArray(classes) && classes.length === 0
               ? "No classes found in the system"
-              : "No classes match your search criteria"}
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
-            {Array.isArray(classes) && classes.length === 0
+              : "No classes match your search criteria"
+          }
+          description={
+            Array.isArray(classes) && classes.length === 0
               ? "Add classes to get started or check if the API is working properly"
-              : "Try adjusting your search or filter criteria"}
-          </p>
-          {Array.isArray(classes) && classes.length === 0 && (
-            <button
-              onClick={openAddModal}
-              className="mt-4 btn-primary inline-flex items-center"
-            >
-              <Icons.Plus className="w-4 h-4 mr-2" />
-              Add First Class
-            </button>
-          )}
-        </div>
+              : "Try adjusting your search or filter criteria"
+          }
+          action={
+            Array.isArray(classes) && classes.length === 0 ? (
+              <button
+                onClick={openAddModal}
+                className="btn-primary inline-flex items-center"
+              >
+                <Icons.Plus className="w-4 h-4 mr-2" />
+                Add First Class
+              </button>
+            ) : null
+          }
+        />
       )}
 
-      {/* Modal */}
-      <Modal
+      <ClassFormModal
         isOpen={isModalOpen}
         editingClass={editingClass}
         formData={formData}

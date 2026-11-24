@@ -4,7 +4,26 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="color-scheme" content="light dark" />
+    <!-- Apply the saved/system theme before first paint to avoid a light flash. -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("darkMode");
+          var dark =
+            saved === null
+              ? window.matchMedia &&
+                window.matchMedia("(prefers-color-scheme: dark)").matches
+              : saved === "true";
+          var root = document.documentElement;
+          if (dark) root.classList.add("dark");
+          root.style.colorScheme = dark ? "dark" : "light";
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute("content", dark ? "#111827" : "#ffffff");
+        } catch (e) {}
+      })();
+    </script>
     <meta
       name="description"
       content="SchoolHub - Modern School Management Dashboard"

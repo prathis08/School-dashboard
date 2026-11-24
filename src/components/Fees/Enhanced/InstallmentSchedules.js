@@ -4,7 +4,6 @@ import {
   Plus,
   Calendar,
   AlertCircle,
-  CheckCircle,
 } from "lucide-react";
 import {
   useEnhancedActiveYear,

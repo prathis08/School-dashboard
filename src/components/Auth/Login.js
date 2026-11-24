@@ -9,10 +9,9 @@ import {
   clearDashboardConfig,
 } from "../../utils/dashboardConfig";
 import {
-  setAuthToken,
+  setSession,
   clearAllAuthCookies,
   getAuthToken,
-  setRefreshToken,
 } from "../../utils/cookies";
 
 const REMEMBERED_EMAIL_KEY = "rememberedEmail";
@@ -52,6 +51,7 @@ const Login = () => {
         `${getApiBaseUrl()}${API_ENDPOINTS.DASHBOARD.CONFIG}`,
         {
           method: "GET",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` }),
@@ -120,27 +120,20 @@ const Login = () => {
           localStorage.removeItem(REMEMBERED_EMAIL_KEY);
         }
 
-        // Store the authentication token in cookies
-        if (response.data?.accessToken) {
-          setAuthToken(response.data.accessToken, formData.rememberMe ? 30 : 7); // 30 days if remember me, 7 days otherwise
-          // Also store in localStorage for backward compatibility
-          localStorage.setItem("authToken", response.data.accessToken);
-        }
-
-        // Store refresh token if available
-        if (response.data?.refreshToken) {
-          setRefreshToken(
-            response.data.refreshToken,
-            formData.rememberMe ? 30 : 7,
-          );
-          // Also store in localStorage for backward compatibility
-          localStorage.setItem("refreshToken", response.data.refreshToken);
-        }
+        // Tokens are set as httpOnly cookies by the API. The SPA only stores a
+        // non-sensitive session marker plus display-only user info.
+        setSession(formData.rememberMe ? 30 : 7);
 
         // Store user information only in localStorage
         // The schoolId is automatically extracted from the API response (response.data.user.schoolId)
         if (response.data?.user) {
           localStorage.setItem("user", JSON.stringify(response.data.user));
+        }
+
+        // Temporary passwords must be changed before the dashboard is usable.
+        if (response.data?.user?.mustChangePassword) {
+          navigate("/change-password");
+          return;
         }
 
         // Fetch dashboard configuration immediately after login

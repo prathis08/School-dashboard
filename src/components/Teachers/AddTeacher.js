@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icons } from "../../utils/icons";
 import { useCreateTeacher } from "../../hooks/useApiHooks";
+import { Modal } from "../Common";
 
 const AddTeacher = () => {
   const navigate = useNavigate();
   const createTeacher = useCreateTeacher();
+  const [created, setCreated] = useState(null);
 
   const [formData, setFormData] = useState({
     role: "teacher",
@@ -177,12 +179,19 @@ const AddTeacher = () => {
         submitData = teacherData;
       }
 
-      await createTeacher.mutateAsync({ data: submitData });
+      const result = await createTeacher.mutateAsync({ data: submitData });
+      const temporaryPassword = result?.data?.temporaryPassword;
 
-      // Success - redirect to teachers list
-      navigate("/teachers", {
-        state: { message: "Teacher created successfully!" },
-      });
+      if (temporaryPassword) {
+        setCreated({
+          name: `${teacherData.firstName} ${teacherData.lastName}`.trim(),
+          temporaryPassword,
+        });
+      } else {
+        navigate("/teachers", {
+          state: { message: "Teacher created successfully!" },
+        });
+      }
     } catch (error) {
       console.error("Error creating teacher:", error);
 
@@ -445,6 +454,60 @@ const AddTeacher = () => {
           </div>
         </form>
       </div>
+
+      <Modal
+        isOpen={Boolean(created)}
+        onClose={() => {
+          setCreated(null);
+          navigate("/teachers");
+        }}
+        title="Teacher created"
+        size="lg"
+      >
+        {created && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Share this temporary password with{" "}
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {created.name}
+              </span>
+              . It is shown only once — the teacher must change it after
+              logging in.
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-sm break-all text-gray-900 dark:text-gray-100">
+                {created.temporaryPassword}
+              </code>
+              <button
+                type="button"
+                onClick={() => {
+                  if (navigator.clipboard) {
+                    navigator.clipboard.writeText(created.temporaryPassword);
+                  }
+                }}
+                className="btn-secondary inline-flex items-center"
+              >
+                <Icons.Copy className="w-4 h-4 mr-1" />
+                Copy
+              </button>
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setCreated(null);
+                  navigate("/teachers", {
+                    state: { message: "Teacher created successfully!" },
+                  });
+                }}
+                className="btn-primary"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

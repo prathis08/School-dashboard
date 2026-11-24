@@ -814,10 +814,10 @@ const Profile = () => {
 
       {/* Tab Content */}
       <div className="card">
-        {activeTab === "personal" && <PersonalInfoTab />}
-        {activeTab === "professional" && <ProfessionalTab />}
-        {activeTab === "security" && <SecurityTab />}
-        {activeTab === "notifications" && <NotificationsTab />}
+        {activeTab === "personal" && PersonalInfoTab()}
+        {activeTab === "professional" && ProfessionalTab()}
+        {activeTab === "security" && SecurityTab()}
+        {activeTab === "notifications" && NotificationsTab()}
       </div>
     </div>
   );

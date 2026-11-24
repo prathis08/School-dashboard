@@ -20,11 +20,13 @@ import {
   useGradesAndClasses,
   useTeacherNames,
 } from "../../hooks/useApiHooks";
+import { Modal } from "../Common";
 
 const AddStudent = () => {
   const navigate = useNavigate();
   const formRef = useRef(null);
   const createStudent = useCreateStudent();
+  const [created, setCreated] = useState(null);
   const { data: teacherNamesResponse } = useTeacherNames();
   const teacherList = Array.isArray(teacherNamesResponse?.data)
     ? teacherNamesResponse.data
@@ -36,10 +38,6 @@ const AddStudent = () => {
     isLoading: classesLoading,
     error: classesError,
   } = useGradesAndClasses();
-
-  const loading = createStudent.isPending;
-  const error = createStudent.error;
-  const clearError = () => createStudent.reset();
 
   // State for processed grades and classes from API
   const [gradeOptions, setGradeOptions] = useState([]);
@@ -279,9 +277,10 @@ const AddStudent = () => {
         "Guardian name is required when no parent information is provided";
     }
 
-    // Email validation (if provided)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (formData.email && !emailRegex.test(formData.email)) {
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!emailRegex.test(formData.email)) {
       newErrors.email = "Please enter a valid email address";
     }
     if (formData.fatherEmail && !emailRegex.test(formData.fatherEmail)) {
@@ -360,7 +359,6 @@ const AddStudent = () => {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
-        password: "student123", // Default password - should be configurable
         studentId: formData.rollNumber,
         dateOfBirth: formData.dateOfBirth,
         gender: formData.gender,
@@ -406,20 +404,22 @@ const AddStudent = () => {
         subjects: formData.subjects,
       };
 
-      console.log(
-        "Sending student data:",
-        JSON.stringify(studentData, null, 2),
-      );
-
       // Call API to create student
-      await createStudent.mutateAsync({ data: studentData });
+      const result = await createStudent.mutateAsync({ data: studentData });
+      const temporaryPassword = result?.data?.temporaryPassword;
 
-      // Navigate back to students page with success message
-      navigate("/students", {
-        state: {
-          message: `Student ${formData.firstName} ${formData.lastName} has been added successfully!`,
-        },
-      });
+      if (temporaryPassword) {
+        setCreated({
+          name: `${formData.firstName} ${formData.lastName}`.trim(),
+          temporaryPassword,
+        });
+      } else {
+        navigate("/students", {
+          state: {
+            message: `Student ${formData.firstName} ${formData.lastName} has been added successfully!`,
+          },
+        });
+      }
     } catch (err) {
       console.error("Error creating student:", err);
       // Error is handled by the hook and displayed in the component
@@ -434,7 +434,7 @@ const AddStudent = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -578,7 +578,7 @@ const AddStudent = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
+                    Email Address <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-gray-500" />
@@ -587,10 +587,11 @@ const AddStudent = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
+                      required
                       className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                         errors.email ? "border-red-500" : "border-gray-300 dark:border-gray-600"
                       }`}
-                      placeholder="student@email.com (optional)"
+                      placeholder="student@email.com"
                     />
                   </div>
                   {errors.email && (
@@ -1629,6 +1630,62 @@ const AddStudent = () => {
           </div>
         </form>
       </div>
+
+      <Modal
+        isOpen={Boolean(created)}
+        onClose={() => {
+          setCreated(null);
+          navigate("/students");
+        }}
+        title="Student created"
+        size="lg"
+      >
+        {created && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Share this temporary password with{" "}
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {created.name}
+              </span>
+              . It is shown only once — the student must change it before using
+              their account.
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-sm break-all text-gray-900 dark:text-gray-100">
+                {created.temporaryPassword}
+              </code>
+              <button
+                type="button"
+                onClick={() => {
+                  if (navigator.clipboard) {
+                    navigator.clipboard.writeText(created.temporaryPassword);
+                  }
+                }}
+                className="btn-secondary inline-flex items-center"
+              >
+                <Paperclip className="w-4 h-4 mr-1" />
+                Copy
+              </button>
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setCreated(null);
+                  navigate("/students", {
+                    state: {
+                      message: `Student ${created.name} has been added successfully!`,
+                    },
+                  });
+                }}
+                className="btn-primary"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

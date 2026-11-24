@@ -13,27 +13,31 @@ const TeacherDetail = () => {
   const [activeTab, setActiveTab] = useState("overview");
 
   // Transform the teacher data if available
-  const teacher = teacherData?.data
+  const raw = teacherData?.data;
+  const teacher = raw
     ? {
-        id: teacherData.data.teacherId || teacherData.data.id,
-        teacherId: teacherData.data.teacherId || teacherData.data.id,
+        id: raw.teacherId,
+        teacherId: raw.teacherId,
+        firstName: raw.personalInfo?.firstName || "",
+        lastName: raw.personalInfo?.lastName || "",
         name:
-          `${teacherData.data.personalInfo?.firstName || ""} ${
-            teacherData.data.personalInfo?.lastName || ""
-          }`.trim() || "Unknown",
-        email: teacherData.data.personalInfo?.email || "",
-        phone: teacherData.data.personalInfo?.phone || "",
-        department: teacherData.data.professionalInfo?.department || "",
-        qualification: teacherData.data.professionalInfo?.qualification || "",
-        experience: teacherData.data.professionalInfo?.experience || 0,
-        joiningDate: teacherData.data.professionalInfo?.dateOfJoining || "",
-        salary: teacherData.data.professionalInfo?.salary || "",
-        subjects: teacherData.data.assignments?.subjects || [],
-        managedClasses: teacherData.data.assignments?.managedClasses || [],
-        status: teacherData.data.status?.isActive ? "Active" : "Inactive",
-        address: "123 Main St, City, State 12345",
-        emergencyContact: "+1 234 567 8999",
-        bio: "Experienced educator passionate about teaching and student development.",
+          raw.personalInfo?.name ||
+          `${raw.personalInfo?.firstName || ""} ${
+            raw.personalInfo?.lastName || ""
+          }`.trim() ||
+          "Unknown",
+        email: raw.personalInfo?.email || "",
+        phone: raw.personalInfo?.phone || "",
+        address: raw.personalInfo?.address || "",
+        department: raw.professionalInfo?.department || "",
+        qualification: raw.professionalInfo?.qualification || "",
+        experience: raw.professionalInfo?.experience ?? 0,
+        joiningDate: raw.professionalInfo?.dateOfJoining || "",
+        salary: raw.professionalInfo?.salary,
+        subjects: raw.assignments?.subjects || [],
+        managedClasses: raw.assignments?.managedClasses || [],
+        status: raw.status?.isActive === false ? "Inactive" : "Active",
+        bio: raw.personalInfo?.bio || "",
       }
     : null;
 
@@ -60,10 +64,20 @@ const TeacherDetail = () => {
   };
 
   const formatCurrency = (amount) => {
+    if (amount === null || amount === undefined || amount === "") return "N/A";
+    const value = Number(amount);
+    if (Number.isNaN(value)) return "N/A";
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
-    }).format(amount);
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
+  const formatDate = (value) => {
+    if (!value) return "N/A";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "N/A" : date.toLocaleDateString();
   };
 
   const tabs = [
@@ -114,7 +128,9 @@ const TeacherDetail = () => {
               {teacher.name}
             </h1>
             <p className="text-gray-600 mt-1">
-              {teacher.department} Department
+              {teacher.department
+                ? `${teacher.department} Department`
+                : "Teacher"}
             </p>
           </div>
         </div>
@@ -123,7 +139,10 @@ const TeacherDetail = () => {
             <Icons.Mail className="w-4 h-4 mr-2" />
             Send Email
           </button>
-          <button className="btn-primary flex items-center">
+          <button
+            onClick={() => navigate(`/teachers/${id}/edit`)}
+            className="btn-primary flex items-center"
+          >
             <Icons.Edit className="w-4 h-4 mr-2" />
             Edit Profile
           </button>
@@ -184,9 +203,7 @@ const TeacherDetail = () => {
                     Joined
                   </p>
                   <p className="font-medium">
-                    {teacher.joiningDate
-                      ? new Date(teacher.joiningDate).toLocaleDateString()
-                      : "N/A"}
+                    {formatDate(teacher.joiningDate)}
                   </p>
                 </div>
               </div>
@@ -274,7 +291,7 @@ const TeacherDetail = () => {
                 Biography
               </h3>
               <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
-                {teacher.bio}
+                {teacher.bio || "No biography provided for this teacher yet."}
               </p>
             </div>
           </div>
@@ -307,15 +324,15 @@ const TeacherDetail = () => {
                     Address
                   </label>
                   <p className="text-gray-900 dark:text-white">
-                    {teacher.address}
+                    {teacher.address || "Not provided"}
                   </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">
-                    Emergency Contact
+                    Date of Joining
                   </label>
                   <p className="text-gray-900 dark:text-white">
-                    {teacher.emergencyContact}
+                    {formatDate(teacher.joiningDate)}
                   </p>
                 </div>
               </div>

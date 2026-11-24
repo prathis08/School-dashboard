@@ -1,27 +1,70 @@
-import { getAuthToken, removeAuthToken } from "../utils/cookies";
+import {
+  getAuthToken,
+  removeAuthToken,
+  removeSession,
+} from "../utils/cookies";
 import { clearDashboardConfig } from "../utils/dashboardConfig";
 import { getApiBaseUrl } from "../utils/apiConfig";
 import { API_ENDPOINTS } from "./api";
 
 export { getApiBaseUrl };
 
-// Enhanced API client for TanStack Query
+// Endpoints that must never trigger the refresh-on-401 flow.
+const isAuthEndpoint = (endpoint) =>
+  endpoint.startsWith("/auth/login") ||
+  endpoint.startsWith("/auth/refresh") ||
+  endpoint.startsWith("/auth/register") ||
+  endpoint.startsWith("/auth/logout");
+
+// Single-flight refresh: concurrent 401s share one refresh request.
+let refreshPromise = null;
+const refreshSession = () => {
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${getApiBaseUrl()}/auth/refresh-token`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error("Session refresh failed");
+        return response;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+};
+
+const forceLogout = () => {
+  removeAuthToken();
+  removeSession();
+  try {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
+  } catch (e) {
+    // Ignore storage failures.
+  }
+  clearDashboardConfig();
+  if (window.location.pathname !== "/login") {
+    window.location.href = "/login";
+  }
+};
+
+// Enhanced API client for TanStack Query. Auth travels in httpOnly cookies
+// (sent via credentials: "include"); an Authorization header is still attached
+// for legacy sessions.
 export const apiClient = async (endpoint, options = {}) => {
   const url = endpoint.startsWith("http")
     ? endpoint
     : `${getApiBaseUrl()}${endpoint}`;
 
-  // Get token from cookies instead of localStorage
   const token = getAuthToken();
 
-  // Debug logging to verify token is available
-  console.log("API Client Debug:", {
-    endpoint,
-    hasToken: !!token,
-    tokenStart: token ? token.substring(0, 20) + "..." : "No token",
-  });
-
-  const defaultOptions = {
+  const requestOptions = {
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(token && { Authorization: `Bearer ${token}` }),
@@ -30,24 +73,46 @@ export const apiClient = async (endpoint, options = {}) => {
   };
   // Handle FormData (file uploads)
   if (options.body instanceof FormData) {
-    delete defaultOptions.headers["Content-Type"];
+    delete requestOptions.headers["Content-Type"];
   }
 
   try {
-    const response = await fetch(url, defaultOptions);
+    let response = await fetch(url, requestOptions);
 
-    if (!response.ok) {
+    // Access token expired → try a single silent refresh, then retry once.
+    if (response.status === 401 && !isAuthEndpoint(endpoint)) {
+      try {
+        await refreshSession();
+        response = await fetch(url, requestOptions);
+      } catch (refreshError) {
+        // fall through to logout below
+      }
       if (response.status === 401) {
-        // Handle unauthorized access
-        removeAuthToken();
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("user");
-        clearDashboardConfig();
-        window.location.href = "/login";
+        forceLogout();
         throw new Error("Unauthorized access");
       }
+    }
 
+    if (response.status === 403) {
+      let payload = null;
+      try {
+        payload = await response.clone().json();
+      } catch (e) {
+        // Non-JSON forbidden response.
+      }
+      if (payload?.code === "PASSWORD_CHANGE_REQUIRED") {
+        if (window.location.pathname !== "/change-password") {
+          window.location.href = "/change-password";
+        }
+        throw new Error(payload.message || "Password change required");
+      }
+      if (payload?.code === "STUDENT_DASHBOARD_DISABLED") {
+        forceLogout();
+        throw new Error(payload.message || "Dashboard access is disabled");
+      }
+    }
+
+    if (!response.ok) {
       let errorMessage = `HTTP error! status: ${response.status}`;
       try {
         const errorData = await response.json();
@@ -108,28 +173,82 @@ export const api = {
   delete: (endpoint) => apiClient(endpoint, { method: "DELETE" }),
 };
 
-// Authentication API functions
+/**
+ * @typedef {"admin"|"coordinator"|"accountant"|"teacher"|"student"} Role
+ *
+ * @typedef {Object} LoginCredentials
+ * @property {string} email
+ * @property {string} password
+ *
+ * @typedef {Object} RegisterPayload
+ * @property {string} firstName  — 2-50 chars
+ * @property {string} lastName   — 2-50 chars
+ * @property {string} email
+ * @property {Role}   role
+ * @property {string} schoolId   — 1-50 chars, alphanumeric
+ *
+ * @typedef {Object} ApiResponse
+ * @property {boolean} success
+ * @property {string} [message]
+ * @property {any}    [data]
+ * @property {Array<{path?:string,msg:string}>} [errors]
+ */
+
+/**
+ * Auth endpoints — mirrors `backend-core` /api/auth/*.
+ *
+ * Required-field reference is documented per call; payloads not matching the
+ * backend validators return HTTP 400 with `{ success:false, errors:[...] }`.
+ */
 export const authApi = {
+  /** @param {LoginCredentials} credentials */
   login: (credentials) => api.post("/auth/login-user", credentials),
+  /** @param {RegisterPayload} userData */
   register: (userData) => api.post("/auth/register-user", userData),
   logout: () => api.post("/auth/logout-user"),
   logoutAll: () => api.post("/auth/logout-all-devices"),
   getProfile: () => api.get("/auth/get-user-profile"),
   getActiveSessions: () => api.get("/auth/get-active-sessions"),
+  /** @param {string} sessionId */
   revokeSession: (sessionId) => api.delete(`/auth/revoke-session/${sessionId}`),
 };
 
-// Dashboard API functions
+/**
+ * Dashboard endpoints — only `/dashboard/stats` is implemented on the backend.
+ * The remaining methods are stubs that will 404 until the backend exposes them.
+ */
 export const dashboardApi = {
   getStats: () => api.get("/dashboard/stats"),
+  /** @deprecated Backend has no `/dashboard/recent-activity` route. */
   getRecentActivity: () => api.get("/dashboard/recent-activity"),
+  /** @deprecated Backend has no `/dashboard/attendance-overview` route. */
   getAttendanceOverview: () => api.get("/dashboard/attendance-overview"),
+  /** @deprecated Backend has no `/dashboard/performance` route. */
   getPerformanceData: () => api.get("/dashboard/performance"),
   getConfig: () => api.get("/features/get-dashboard-config"),
 };
 
-// Student API functions
+/**
+ * @typedef {Object} StudentPayload
+ * @property {string} firstName    — REQUIRED, 2-50 chars
+ * @property {string} lastName     — REQUIRED, 2-50 chars
+ * @property {string} email        — REQUIRED, valid email
+ * @property {Role}   role         — REQUIRED, must be "student"
+ * @property {string} dateOfBirth  — REQUIRED, ISO8601
+ * @property {"male"|"female"|"other"} gender — REQUIRED
+ * @property {string} [schoolId]   — optional, 1-50 alphanumeric
+ *
+ * @typedef {Object} StudentListParams
+ * @property {string} [gradeId]
+ * @property {number} [page]
+ * @property {number} [limit]
+ */
+
+/**
+ * Student endpoints — `admission` module routes mounted at /api/students.
+ */
 export const studentsApi = {
+  /** @param {StudentListParams} [params] */
   getAll: (params = {}) => {
     const query = new URLSearchParams();
     if (params.gradeId) query.set("gradeId", params.gradeId);
@@ -140,14 +259,22 @@ export const studentsApi = {
       `/students/get-all-students${qs ? `?${qs}` : ""}`,
     );
   },
+  /** @param {string} id */
   getById: (id) => api.get(`/students/get-student-by-id/${id}`),
+  /** @param {StudentPayload} data */
   create: (data) => api.post("/students/create-student", data),
+  /** @param {string} id @param {Partial<StudentPayload>} data */
   update: (id, data) => api.put(`/students/update-student-by-id/${id}`, data),
+  /** @param {string} id */
   delete: (id) => api.delete(`/students/delete-student-by-id/${id}`),
+  /** @param {string} query — min 3 chars */
   search: (query) => api.get(`/students/search?q=${encodeURIComponent(query)}`),
+  /** @deprecated Backend has no `/students/grades` route — use `classesApi.getGradesOptions()`. */
   getGrades: () => api.get("/students/grades"),
   getStatusOptions: () => api.get("/students/get-status-options"),
+  /** @deprecated Backend has no `/students/:id/attendance` route. */
   getAttendance: (id) => api.get(`/students/${id}/attendance`),
+  /** @deprecated Backend has no `/students/:id/performance` route. */
   getPerformance: (id) => api.get(`/students/${id}/performance`),
   startExport: ({ scope, classId, classLabel } = {}) =>
     api.post("/students/export", { scope, classId, classLabel }),
@@ -156,40 +283,90 @@ export const studentsApi = {
     `${getApiBaseUrl()}/students/export/download/${jobId}`,
 };
 
-// Teacher API functions
+/**
+ * @typedef {Object} TeacherPayload
+ * @property {string} firstName       — REQUIRED, 2-50 chars
+ * @property {string} lastName        — REQUIRED, 2-50 chars
+ * @property {string} email           — REQUIRED, valid email
+ * @property {Role}   role            — REQUIRED, must be "teacher"
+ * @property {string} department      — REQUIRED
+ * @property {number} experience      — REQUIRED, int >= 0
+ * @property {string} dateOfJoining   — REQUIRED, ISO8601
+ * @property {string} [schoolId]
+ * @property {string} [qualification]
+ * @property {number} [salary]
+ * @property {string} [phone]
+ */
+
+/**
+ * Teacher endpoints — `admission` module routes mounted at /api/teachers.
+ */
 export const teachersApi = {
   getAll: () => api.get("/teachers/get-all-teachers"),
   getTeacherNames: () => api.get("/teachers/get-teacher-names"),
+  /** @param {string} id */
   getById: (id) => api.get(`/teachers/get-teacher-by-id/${id}`),
+  /** @param {TeacherPayload} data */
   create: (data) => api.post("/teachers/create-teacher", data),
+  /** @param {string} id @param {Partial<TeacherPayload>} data */
   update: (id, data) => api.put(`/teachers/update-teacher-by-id/${id}`, data),
+  /** @param {string} id */
   delete: (id) => api.delete(`/teachers/delete-teacher-by-id/${id}`),
+  /** @param {string} id — resets the teacher's password to a temporary one */
+  resetPassword: (id) => api.post(`/teachers/${id}/reset-password`),
+  /** @deprecated Backend has no `/teachers/search` route — use getAll + client filter. */
   search: (query) => api.get(`/teachers/search?q=${encodeURIComponent(query)}`),
+  /** @deprecated Backend has no `/teachers/departments` route. */
   getDepartments: () => api.get("/teachers/departments"),
 };
 
-// Class API functions
+/**
+ * @typedef {Object} ClassPayload
+ * @property {string} grade         — REQUIRED
+ * @property {string} section       — REQUIRED
+ * @property {string} [className]   — display name composed from grade + section
+ * @property {string} [gradeId]     — optional, 1-50 chars
+ * @property {number} [maxStudents] — optional, 1-100
+ */
+
 export const classesApi = {
   getAll: () => api.get("/classes/get-all-classes"),
   getGradesAndClasses: () => api.get("/classes/grades-and-classes"),
   getGradesOptions: () => api.get("/classes/get-grades-options"),
+  /** @param {string} id */
   getById: (id) => api.get(`/classes/get-class-by-id/${id}`),
+  /** @param {ClassPayload} data */
   create: (data) => api.post("/classes/create-new-class", data),
-  update: (id, data) => {
-    return api.put(`/classes/update-class/${id}`, data);
-  },
+  /** @param {string} id @param {Partial<ClassPayload>} data */
+  update: (id, data) => api.put(`/classes/update-class/${id}`, data),
+  /** @param {string} id */
   delete: (id) => api.delete(`/classes/delete-class/${id}`),
+  /** @param {string} classId @param {string} studentId */
   addStudent: (classId, studentId) =>
     api.post(`/classes/add-student-to-class/${classId}`, { studentId }),
 };
 
-// Subject API functions
+/**
+ * @typedef {Object} SubjectPayload
+ * @property {string} subjectName  — REQUIRED, 2-100 chars
+ * @property {string} subjectCode  — REQUIRED, 2-10 chars, /^[A-Z0-9]+$/
+ * @property {string} department   — REQUIRED
+ * @property {number} credits      — REQUIRED, int 1-10
+ * @property {string} [description]
+ * @property {string} [syllabus]
+ */
+
 export const subjectsApi = {
   getAll: () => api.get("/subjects/get-all-subjects"),
+  /** @param {string} id */
   getById: (id) => api.get(`/subjects/get-subject-by-id/${id}`),
+  /** @param {SubjectPayload} data */
   create: (data) => api.post("/subjects/create-subject", data),
+  /** @param {string} id @param {Partial<SubjectPayload>} data */
   update: (id, data) => api.put(`/subjects/update-subject-by-id/${id}`, data),
+  /** @param {string} id */
   delete: (id) => api.delete(`/subjects/delete-subject-by-id/${id}`),
+  /** @param {string} subjectId @param {string} teacherId */
   assignTeacher: (subjectId, teacherId) =>
     api.post(`/subjects/assign-teacher-to-subject/${subjectId}`, { teacherId }),
 };
@@ -436,6 +613,164 @@ export const settingsApi = {
   updateSchool: (data) => api.put("/settings/school", data),
   getPreferences: () => api.get("/settings/preferences"),
   updatePreferences: (data) => api.put("/settings/preferences", data),
+};
+
+/**
+ * @typedef {Object} ExamSubjectPayload
+ * @property {string} subjectId        — REQUIRED
+ * @property {string} examDate         — REQUIRED, ISO date (YYYY-MM-DD)
+ * @property {number} maxMarks         — REQUIRED, > 0
+ * @property {number} passingMarks     — REQUIRED, 0 ≤ passing ≤ maxMarks
+ * @property {string} [startTime]      — HH:MM
+ * @property {string} [endTime]        — HH:MM
+ *
+ * @typedef {Object} ExamPayload
+ * @property {string} examName                   — REQUIRED, 2-150 chars
+ * @property {"EXAM"|"REGULAR_ASSESSMENT"} examType — REQUIRED
+ * @property {string} gradeId                    — REQUIRED
+ * @property {string} academicYear               — REQUIRED
+ * @property {string} [status]                   — DRAFT|SCHEDULED|ONGOING|COMPLETED|PUBLISHED
+ * @property {string} [instructions]
+ * @property {ExamSubjectPayload[]} subjects     — REQUIRED, ≥1 row
+ *
+ * @typedef {Object} MarksEntry
+ * @property {string} studentId
+ * @property {number|null} [marksObtained]
+ * @property {"PASS"|"FAIL"|"ABSENT"} [status]
+ * @property {string} [remarks]
+ */
+
+/**
+ * Examination endpoints — `examination` module routes mounted at /api/exams.
+ */
+export const examinationsApi = {
+  /** @param {{gradeId?:string, academicYear?:string, examType?:string, status?:string}} [filters] */
+  list: (filters = {}) => {
+    const qs = new URLSearchParams();
+    if (filters.gradeId) qs.set("gradeId", filters.gradeId);
+    if (filters.academicYear) qs.set("academicYear", filters.academicYear);
+    if (filters.examType) qs.set("examType", filters.examType);
+    if (filters.status) qs.set("status", filters.status);
+    const q = qs.toString();
+    return api.get(`/exams${q ? `?${q}` : ""}`);
+  },
+  /** @param {string} examId */
+  getById: (examId) => api.get(`/exams/${examId}`),
+  /** @param {ExamPayload} data */
+  create: (data) => api.post("/exams", data),
+  /** @param {string} examId @param {Partial<ExamPayload>} data */
+  update: (examId, data) => api.put(`/exams/${examId}`, data),
+  /** @param {string} examId */
+  delete: (examId) => api.delete(`/exams/${examId}`),
+
+  /** @param {string} examId */
+  getStudents: (examId) => api.get(`/exams/${examId}/students`),
+  /** @param {string} examId */
+  getResults: (examId) => api.get(`/exams/${examId}/results`),
+
+  /**
+   * @param {string} examId
+   * @param {string} examSubjectId
+   * @param {MarksEntry[]} entries
+   */
+  submitMarks: (examId, examSubjectId, entries) =>
+    api.post(`/exams/${examId}/subjects/${examSubjectId}/marks`, { entries }),
+
+  /**
+   * @param {string} studentId
+   * @param {{academicYear?:string}} [filters]
+   */
+  getReportCard: (studentId, filters = {}) => {
+    const qs = filters.academicYear
+      ? `?academicYear=${encodeURIComponent(filters.academicYear)}`
+      : "";
+    return api.get(`/exams/students/${studentId}/report-card${qs}`);
+  },
+};
+
+/**
+ * @typedef {Object} AttendanceEntry
+ * @property {string} studentId
+ * @property {"PRESENT"|"ABSENT"|"LATE"|"EXCUSED"} status
+ * @property {string} [remarks]
+ */
+
+/**
+ * Attendance endpoints — `attendance` module routes mounted at /api/attendance.
+ */
+export const attendanceApi = {
+  /**
+   * @param {string} classId
+   * @param {string} [date]   — YYYY-MM-DD (defaults to today on the backend)
+   * @param {string} [period]
+   */
+  getClassRoster: (classId, date, period) => {
+    const qs = new URLSearchParams();
+    if (date) qs.set("date", date);
+    if (period) qs.set("period", period);
+    const q = qs.toString();
+    return api.get(`/attendance/class/${classId}${q ? `?${q}` : ""}`);
+  },
+
+  /**
+   * @param {{classId:string, date:string, period?:string, entries:AttendanceEntry[]}} payload
+   */
+  mark: (payload) => api.post("/attendance/mark", payload),
+
+  /**
+   * @param {string} studentId
+   * @param {{from?:string, to?:string}} [filters]
+   */
+  getStudentHistory: (studentId, filters = {}) => {
+    const qs = new URLSearchParams();
+    if (filters.from) qs.set("from", filters.from);
+    if (filters.to) qs.set("to", filters.to);
+    const q = qs.toString();
+    return api.get(`/attendance/student/${studentId}${q ? `?${q}` : ""}`);
+  },
+
+  /**
+   * @param {{classId?:string, from?:string, to?:string}} [filters]
+   */
+  getSummary: (filters = {}) => {
+    const qs = new URLSearchParams();
+    if (filters.classId) qs.set("classId", filters.classId);
+    if (filters.from) qs.set("from", filters.from);
+    if (filters.to) qs.set("to", filters.to);
+    const q = qs.toString();
+    return api.get(`/attendance/summary${q ? `?${q}` : ""}`);
+  },
+};
+
+/**
+ * Academic endpoints — enrollment history + promotion.
+ * Routes mounted at /api/academic.
+ */
+export const academicApi = {
+  getEnrollments: (params = {}) => {
+    const qs = new URLSearchParams();
+    if (params.academicYearId) qs.set("academicYearId", params.academicYearId);
+    if (params.gradeId) qs.set("gradeId", params.gradeId);
+    if (params.classId) qs.set("classId", params.classId);
+    if (params.studentId) qs.set("studentId", params.studentId);
+    const q = qs.toString();
+    return api.get(`/academic/enrollments${q ? `?${q}` : ""}`);
+  },
+  getStudentEnrollments: (studentId) =>
+    api.get(`/academic/enrollments/student/${studentId}`),
+  createEnrollment: (data) => api.post("/academic/enrollments", data),
+
+  getPromotionRule: () => api.get("/academic/promotion-rule"),
+  savePromotionRule: (data) => api.put("/academic/promotion-rule", data),
+
+  previewPromotions: (params = {}) => {
+    const qs = new URLSearchParams();
+    if (params.academicYearId) qs.set("academicYearId", params.academicYearId);
+    if (params.gradeId) qs.set("gradeId", params.gradeId);
+    if (params.classId) qs.set("classId", params.classId);
+    return api.get(`/academic/promotions/preview?${qs.toString()}`);
+  },
+  runPromotions: (data) => api.post("/academic/promotions/run", data),
 };
 
 export default api;

@@ -13,6 +13,7 @@ import Dashboard from "./components/Dashboard/Dashboard";
 import Teachers from "./components/Teachers/Teachers";
 import AddTeacher from "./components/Teachers/AddTeacher";
 import TeacherDetail from "./components/Teachers/TeacherDetail";
+import EditTeacher from "./components/Teachers/EditTeacher";
 import Students from "./components/Students/Students";
 import AddStudent from "./components/Students/AddStudent";
 import EditStudent from "./components/Students/EditStudent";
@@ -24,8 +25,17 @@ import Fees from "./components/Fees/Fees";
 import FeeCreation from "./components/Fees/FeeCreation";
 import RecordPayment from "./components/Fees/RecordPayment";
 import PaymentHistory from "./components/Fees/PaymentHistory";
+import InstallmentTemplates from "./components/Fees/InstallmentTemplates";
+import Attendance from "./components/Attendance/Attendance";
 import Profile from "./components/Profile/Profile";
 import Settings from "./components/Settings/Settings";
+import ChangePassword from "./components/Auth/ChangePassword";
+import Examinations from "./components/Examinations/Examinations";
+import CreateExam from "./components/Examinations/CreateExam";
+import ExamDetail from "./components/Examinations/ExamDetail";
+import ReportCard from "./components/Examinations/ReportCard";
+import Promotions from "./components/Examinations/Promotions";
+import ExamSettings from "./components/Examinations/ExamSettings";
 import Layout from "./components/Layout/Layout";
 import { isAuthenticated } from "./utils/cookies";
 import "./index.css";
@@ -79,6 +89,10 @@ function App() {
                           path="/teachers/:id"
                           element={<TeacherDetail />}
                         />
+                        <Route
+                          path="/teachers/:id/edit"
+                          element={<EditTeacher />}
+                        />
                         <Route path="/students" element={<Students />} />
                         <Route path="/students/add" element={<AddStudent />} />
                         <Route
@@ -90,6 +104,7 @@ function App() {
                           element={<EditStudent />}
                         />
                         <Route path="/classes" element={<Classes />} />
+                        <Route path="/attendance" element={<Attendance />} />
                         <Route path="/subjects" element={<Subjects />} />
                         <Route
                           path="/subjects/:id"
@@ -98,6 +113,10 @@ function App() {
                         <Route path="/fees" element={<Fees />} />
                         <Route path="/fees/create" element={<FeeCreation />} />
                         <Route
+                          path="/fees/templates"
+                          element={<InstallmentTemplates />}
+                        />
+                        <Route
                           path="/fees/payment/:studentId"
                           element={<RecordPayment />}
                         />
@@ -105,7 +124,35 @@ function App() {
                           path="/fees/history/:studentId"
                           element={<PaymentHistory />}
                         />
+                        <Route
+                          path="/examinations"
+                          element={<Examinations />}
+                        />
+                        <Route
+                          path="/examinations/new"
+                          element={<CreateExam />}
+                        />
+                        <Route
+                          path="/examinations/promotions"
+                          element={<Promotions />}
+                        />
+                        <Route
+                          path="/examinations/settings"
+                          element={<ExamSettings />}
+                        />
+                        <Route
+                          path="/examinations/:examId"
+                          element={<ExamDetail />}
+                        />
+                        <Route
+                          path="/examinations/students/:studentId/report-card"
+                          element={<ReportCard />}
+                        />
                         <Route path="/profile" element={<Profile />} />
+                        <Route
+                          path="/change-password"
+                          element={<ChangePassword />}
+                        />
                         <Route path="/settings" element={<Settings />} />
                       </Routes>
                     </Layout>

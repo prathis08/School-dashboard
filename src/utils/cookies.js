@@ -8,6 +8,32 @@ import Cookies from "js-cookie";
 const AUTH_TOKEN_COOKIE = "authToken";
 const REFRESH_TOKEN_COOKIE = "refreshToken";
 const USER_DATA_COOKIE = "userData";
+// Non-sensitive marker the SPA can read. Real tokens live in httpOnly cookies
+// set by the API.
+const SESSION_COOKIE = "session";
+
+/**
+ * Mark the browser as having an active session (readable by the SPA).
+ */
+export const setSession = (expiresInDays = 7) => {
+  try {
+    Cookies.set(SESSION_COOKIE, "1", {
+      expires: expiresInDays,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
+  } catch (error) {
+    console.error("Error setting session marker:", error);
+  }
+};
+
+export const removeSession = () => {
+  try {
+    Cookies.remove(SESSION_COOKIE);
+  } catch (error) {
+    console.error("Error removing session marker:", error);
+  }
+};
 
 /**
  * Set authentication token in cookie
@@ -140,14 +166,17 @@ export const clearAllAuthCookies = () => {
   removeAuthToken();
   removeRefreshToken();
   removeUserData();
+  removeSession();
 };
 
 /**
- * Check if user is authenticated based on cookie presence
- * @returns {boolean} True if auth token exists in cookies
+ * Check if the browser has an active session. Tokens are httpOnly; the
+ * readable `session` marker is what the SPA checks. Legacy authToken cookie is
+ * still accepted during migration.
+ * @returns {boolean}
  */
 export const isAuthenticated = () => {
-  return getAuthToken() !== null;
+  return Cookies.get(SESSION_COOKIE) === "1" || getAuthToken() !== null;
 };
 
 const cookieUtils = {
@@ -160,6 +189,8 @@ const cookieUtils = {
   setUserData,
   getUserData,
   removeUserData,
+  setSession,
+  removeSession,
   clearAllAuthCookies,
   isAuthenticated,
 };

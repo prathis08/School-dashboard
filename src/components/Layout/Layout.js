@@ -8,11 +8,12 @@ import {
   setSchoolId,
 } from "../../utils/dashboardConfig";
 import { clearAllAuthCookies } from "../../utils/cookies";
+import { getApiBaseUrl } from "../../utils/apiConfig";
 import { useDashboardConfig, useProfile } from "../../hooks/useApiHooks";
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [feesDropdownOpen, setFeesDropdownOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -97,7 +98,37 @@ const Layout = ({ children }) => {
             name: "Fee Creation",
             path: "/fees/create",
           },
+          {
+            id: "fee-templates",
+            name: "Installment Templates",
+            path: "/fees/templates",
+          },
           { id: "fee-management", name: "Fee Management", path: "/fees" },
+        ],
+      },
+      {
+        id: "attendance",
+        name: "Attendance",
+        icon: Icons.ClipboardCheck,
+        path: "/attendance",
+      },
+      {
+        id: "examinations",
+        name: "Examinations",
+        icon: Icons.ClipboardList || Icons.BookOpen,
+        isDropdown: true,
+        subItems: [
+          { id: "exams-list", name: "All Exams", path: "/examinations" },
+          {
+            id: "exams-promotions",
+            name: "Promotions",
+            path: "/examinations/promotions",
+          },
+          {
+            id: "exams-settings",
+            name: "Exam Settings",
+            path: "/examinations/settings",
+          },
         ],
       },
       // Note: Teachers, attendance, library, and messages are not in the enabled features list
@@ -120,15 +151,18 @@ const Layout = ({ children }) => {
     return allMenuItems.filter((item) => enabledFeatureIds.includes(item.id));
   }, [dashboardConfig]);
 
-  const otherItems = [
-    { id: "profile", name: "Profile", icon: Icons.User, path: "/profile" },
-    {
-      id: "settings",
-      name: "Settings",
-      icon: Icons.Settings,
-      path: "/settings",
-    },
-  ];
+  const otherItems = useMemo(
+    () => [
+      { id: "profile", name: "Profile", icon: Icons.User, path: "/profile" },
+      {
+        id: "settings",
+        name: "Settings",
+        icon: Icons.Settings,
+        path: "/settings",
+      },
+    ],
+    [],
+  );
 
   // Create searchable items from menu items and other features
   const searchableItems = useMemo(() => {
@@ -167,7 +201,7 @@ const Layout = ({ children }) => {
     });
 
     return items;
-  }, [menuItems]);
+  }, [menuItems, otherItems]);
 
   // Search functionality
   useEffect(() => {
@@ -195,17 +229,33 @@ const Layout = ({ children }) => {
     setSidebarOpen(false);
   };
 
-  const handleLogout = () => {
-    // Clear all authentication data
-    clearAllAuthCookies(); // Clear cookies
+  const handleLogout = async () => {
+    // Revoke the server session (clears httpOnly cookies) before clearing the
+    // client-side markers.
+    try {
+      await fetch(`${getApiBaseUrl()}/auth/logout-user`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (error) {
+      // Best-effort; still clear local state below.
+    }
+    clearAllAuthCookies();
     localStorage.removeItem("authToken");
+    localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
-    clearDashboardConfig(); // Clear dashboard configuration on logout
+    clearDashboardConfig();
     navigate("/login");
   };
 
   const isActive = (path) => location.pathname === path;
-  const isFeesPathActive = () => location.pathname.startsWith("/fees");
+  const isDropdownPathActive = (item) =>
+    item.subItems?.some(
+      (sub) =>
+        location.pathname === sub.path ||
+        (sub.path !== "/" && location.pathname.startsWith(`${sub.path}/`)),
+    );
 
   // Get user data from profile API or fallback to localStorage
   const getUserInfo = () => {
@@ -280,23 +330,26 @@ const Layout = ({ children }) => {
               const Icon = item.icon;
 
               if (item.isDropdown) {
+                const isOpen = openDropdown === item.id;
                 return (
                   <li key={item.id}>
                     <button
-                      onClick={() => setFeesDropdownOpen(!feesDropdownOpen)}
+                      onClick={() =>
+                        setOpenDropdown(isOpen ? null : item.id)
+                      }
                       className={`sidebar-item w-full text-left ${
-                        isFeesPathActive() ? "active" : ""
+                        isDropdownPathActive(item) ? "active" : ""
                       }`}
                     >
                       <Icon className="w-5 h-5" />
                       <span>{item.name}</span>
                       <Icons.ChevronDown
                         className={`w-4 h-4 ml-auto transition-transform duration-200 ${
-                          feesDropdownOpen ? "rotate-180" : ""
+                          isOpen ? "rotate-180" : ""
                         }`}
                       />
                     </button>
-                    {feesDropdownOpen && (
+                    {isOpen && (
                       <ul className="mt-2 ml-6 space-y-1">
                         {item.subItems.map((subItem) => (
                           <li key={subItem.id}>

@@ -88,6 +88,7 @@ const ExportStudentsModal = ({ isOpen, onClose }) => {
       const url = studentsApi.getExportDownloadUrl(jobId);
       const token = getAuthToken();
       const response = await fetch(url, {
+        credentials: "include",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!response.ok) {

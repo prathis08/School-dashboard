@@ -42,8 +42,8 @@ const ViewFeeStructure = ({ onEdit }) => {
   const activeYear = activeYearData?.data;
   const gradeFees = gradeFeeData?.data;
   const schedules = schedulesData?.data || [];
-  const grades = gradesData?.data || [];
-  const feeTypes = feeTypesData?.data || [];
+  const grades = useMemo(() => gradesData?.data || [], [gradesData]);
+  const feeTypes = useMemo(() => feeTypesData?.data || [], [feeTypesData]);
 
   // Helper to get fee type name by ID (supports both UUID id and custom feeTypeId)
   const getFeeTypeName = useMemo(() => {
@@ -120,17 +120,17 @@ const ViewFeeStructure = ({ onEdit }) => {
   return (
     <div className="space-y-6">
       {/* Grade Selection */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
           Select Grade to View Fee Structure
         </label>
         {loadingGrades ? (
-          <div className="text-sm text-gray-500">Loading grades...</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">Loading grades...</div>
         ) : (
           <select
             value={selectedGradeId}
             onChange={(e) => setSelectedGradeId(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
           >
             <option value="">Choose a grade</option>
             {grades.map((grade) => (
@@ -144,33 +144,33 @@ const ViewFeeStructure = ({ onEdit }) => {
 
       {/* Fee Structure Display */}
       {selectedGradeId && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           {isLoading ? (
             <div className="text-center py-12">
-              <div className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-gray-600 mt-4">Loading fee structure...</p>
+              <div className="inline-block w-8 h-8 border-4 border-blue-600 dark:border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-gray-600 dark:text-gray-300 mt-4">Loading fee structure...</p>
             </div>
           ) : !gradeFees || gradeFees.length === 0 ? (
             <div className="text-center py-12">
-              <Layers className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 font-medium">
+              <Layers className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+              <p className="text-gray-600 dark:text-gray-300 font-medium">
                 No fee structure found
               </p>
-              <p className="text-gray-500 text-sm mt-2">
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
                 Create a fee structure for this grade to see it here
               </p>
             </div>
           ) : (
             <div className="space-y-6">
               {/* Header with Edit and Delete Buttons */}
-              <div className="border-b border-gray-200 pb-4 flex items-center justify-between">
+              <div className="border-b border-gray-200 dark:border-gray-700 pb-4 flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                     {grades.find((g) => g.gradeId === selectedGradeId)?.grade ||
                       "Unknown Grade"}{" "}
                     Fee Structure
                   </h3>
-                  <p className="text-gray-600 mt-1">
+                  <p className="text-gray-600 dark:text-gray-300 mt-1">
                     Academic Year: {activeYear?.name}
                   </p>
                 </div>
@@ -206,13 +206,13 @@ const ViewFeeStructure = ({ onEdit }) => {
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-sm text-gray-600 mb-1">
+                    <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">
                       Total Annual Fee
                     </div>
-                    <div className="text-3xl font-bold text-blue-600">
+                    <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                       ₹{getTotalFee(gradeFees).toFixed(2)}
                     </div>
-                    <div className="text-sm text-gray-600 mt-2">
+                    <div className="text-sm text-gray-600 dark:text-gray-300 mt-2">
                       {gradeFees.length} fee types included
                     </div>
                   </div>
@@ -221,7 +221,7 @@ const ViewFeeStructure = ({ onEdit }) => {
 
               {/* Fee Breakdown */}
               <div>
-                <h4 className="font-semibold text-gray-900 mb-4">
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-4">
                   Fee Breakdown
                 </h4>
                 <div className="space-y-3">
@@ -231,25 +231,25 @@ const ViewFeeStructure = ({ onEdit }) => {
                     return (
                       <div
                         key={feeIndex}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                        className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg"
                       >
                         <div className="flex items-center space-x-3">
-                          <IndianRupee className="w-5 h-5 text-gray-400" />
+                          <IndianRupee className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                           <div>
-                            <div className="font-medium text-gray-900">
+                            <div className="font-medium text-gray-900 dark:text-white">
                               {feeTypeInfo?.name || "Unknown Fee"}
                             </div>
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-gray-600 dark:text-gray-300">
                               {feeTypeInfo?.description}
                             </div>
                             <div className="flex space-x-2 mt-1">
                               {feeTypeInfo?.isMandatory && (
-                                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
+                                <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-1 rounded">
                                   Mandatory
                                 </span>
                               )}
                               {feeTypeInfo?.isOneTime && (
-                                <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
+                                <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 px-2 py-1 rounded">
                                   One-Time
                                 </span>
                               )}
@@ -257,7 +257,7 @@ const ViewFeeStructure = ({ onEdit }) => {
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-lg font-bold text-gray-900">
+                          <div className="text-lg font-bold text-gray-900 dark:text-white">
                             ₹{parseFloat(fee.annualAmount || 0).toFixed(2)}
                           </div>
                         </div>
@@ -270,7 +270,7 @@ const ViewFeeStructure = ({ onEdit }) => {
               {/* Installment Schedules */}
               {schedules.length > 0 && (
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-4">
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-4">
                     Installment Schedules ({schedules.length})
                   </h4>
                   <div className="space-y-4">
@@ -279,48 +279,48 @@ const ViewFeeStructure = ({ onEdit }) => {
                       return (
                         <div
                           key={idx}
-                          className="border border-gray-200 rounded-lg overflow-hidden"
+                          className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
                         >
                           {/* Schedule Header */}
                           <div
-                            className="bg-blue-50 p-4 cursor-pointer flex items-center justify-between"
+                            className="bg-blue-50 dark:bg-blue-900/20 p-4 cursor-pointer flex items-center justify-between"
                             onClick={() =>
                               setExpandedSchedule(isExpanded ? null : idx)
                             }
                           >
                             <div className="flex items-center space-x-3">
-                              <Calendar className="w-5 h-5 text-blue-600" />
+                              <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                               <div>
-                                <div className="font-medium text-gray-900">
+                                <div className="font-medium text-gray-900 dark:text-white">
                                   {formatScheduleName(schedule.name)}
                                 </div>
-                                <div className="text-sm text-gray-600">
+                                <div className="text-sm text-gray-600 dark:text-gray-300">
                                   {schedule.installments?.length} installments
                                 </div>
                               </div>
                             </div>
                             <div>
                               {isExpanded ? (
-                                <ChevronUp className="w-5 h-5 text-gray-400" />
+                                <ChevronUp className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                               ) : (
-                                <ChevronDown className="w-5 h-5 text-gray-400" />
+                                <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                               )}
                             </div>
                           </div>
 
                           {/* Schedule Details */}
                           {isExpanded && (
-                            <div className="p-4 bg-white">
+                            <div className="p-4 bg-white dark:bg-gray-800">
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                 {schedule.installments?.map((installment) => (
                                   <div
                                     key={installment.id}
-                                    className="p-4 bg-gray-50 border border-gray-200 rounded-lg"
+                                    className="p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
                                   >
-                                    <div className="font-medium text-gray-900 mb-2">
+                                    <div className="font-medium text-gray-900 dark:text-white mb-2">
                                       {installment.name}
                                     </div>
-                                    <div className="text-sm text-gray-600 mb-3">
+                                    <div className="text-sm text-gray-600 dark:text-gray-300 mb-3">
                                       Due:{" "}
                                       {new Date(
                                         installment.dueDate,
@@ -329,7 +329,7 @@ const ViewFeeStructure = ({ onEdit }) => {
                                     {installment.feeMappings &&
                                       installment.feeMappings.length > 0 && (
                                         <div className="space-y-1">
-                                          <div className="text-xs font-medium text-gray-700 mb-1">
+                                          <div className="text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">
                                             Fee Distribution:
                                           </div>
                                           {installment.feeMappings.map(
@@ -342,7 +342,7 @@ const ViewFeeStructure = ({ onEdit }) => {
                                               return (
                                                 <div
                                                   key={mapIdx}
-                                                  className="text-xs text-gray-600 flex justify-between"
+                                                  className="text-xs text-gray-600 dark:text-gray-300 flex justify-between"
                                                 >
                                                   <span>
                                                     {mappingFeeType?.name ||
@@ -374,12 +374,12 @@ const ViewFeeStructure = ({ onEdit }) => {
       )}
 
       {!selectedGradeId && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <Layers className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+          <Layers className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
             Select a Grade
           </h3>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-300">
             Choose a grade from the dropdown to view its fee structure
           </p>
         </div>

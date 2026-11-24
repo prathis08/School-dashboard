@@ -12,6 +12,7 @@ const apiClient = async (endpoint, options = {}) => {
   const token = getAuthToken();
 
   const defaultOptions = {
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(token && { Authorization: `Bearer ${token}` }),
@@ -192,6 +193,24 @@ export const QUERY_KEYS = {
   // Subjects
   SUBJECTS: "subjects",
   SUBJECT_DETAIL: "subjectDetail",
+
+  // Examinations
+  EXAMS: "exams",
+  EXAM_DETAIL: "examDetail",
+  EXAM_STUDENTS: "examStudents",
+  EXAM_RESULTS: "examResults",
+  STUDENT_REPORT_CARD: "studentReportCard",
+
+  // Attendance
+  ATTENDANCE_ROSTER: "attendanceRoster",
+  ATTENDANCE_SUMMARY: "attendanceSummary",
+  STUDENT_ATTENDANCE_HISTORY: "studentAttendanceHistory",
+
+  // Academic / Enrollment
+  ENROLLMENTS: "enrollments",
+  STUDENT_ENROLLMENTS: "studentEnrollments",
+  PROMOTION_RULE: "promotionRule",
+  PROMOTION_PREVIEW: "promotionPreview",
 
   // Fees
   FEE_STRUCTURES: "feeStructures",

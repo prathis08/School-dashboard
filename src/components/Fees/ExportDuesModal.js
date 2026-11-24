@@ -84,6 +84,7 @@ const ExportDuesModal = ({ isOpen, onClose }) => {
       const url = enhancedFeesApi.duesExport.getDownloadUrl(jobId);
       const token = getAuthToken();
       const response = await fetch(url, {
+        credentials: "include",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!response.ok) throw new Error(`Download failed (${response.status})`);
