@@ -3,6 +3,7 @@ import Icons from "../../utils/icons";
 import { useClasses, useAttendanceRoster, useMarkAttendance } from "../../hooks/useApiHooks";
 import { useToast } from "../../context/UIProvider";
 import { LoadingState, ErrorState, EmptyState } from "../Common";
+import { formatDate } from "../../utils/formatDate";
 
 const STATUS_OPTIONS = [
   { value: "PRESENT", label: "Present", short: "P" },
@@ -293,7 +294,7 @@ const Attendance = () => {
             <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <div>
                 <h2 className="font-semibold text-gray-900 dark:text-white">
-                  {selectedClass?.className || "Class"} · {date}
+                  {selectedClass?.className || "Class"} · {formatDate(date)}
                 </h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {entries.length} student(s)

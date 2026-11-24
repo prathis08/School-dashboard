@@ -1,3 +1,4 @@
+import { formatDate } from "../../../utils/formatDate";
 import React, { useState } from "react";
 import {
   CreditCard,
@@ -215,9 +216,7 @@ const PaymentRecording = () => {
                           <div className="space-y-1 text-sm">
                             <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
                               Due:{" "}
-                              {new Date(
-                                installment.dueDate,
-                              ).toLocaleDateString()}
+                              {formatDate(installment.dueDate)}
                             </p>
                             <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
                               Amount: ₹{installment.amount?.toLocaleString()}

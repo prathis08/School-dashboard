@@ -1,3 +1,4 @@
+import { formatDate } from "../../../utils/formatDate";
 import React, { useState } from "react";
 import {
   Calendar,
@@ -185,13 +186,13 @@ const AcademicYearManagement = () => {
               <div className="flex items-center text-sm">
                 <span className="text-gray-600 w-20">Start:</span>
                 <span className="text-gray-900 font-medium">
-                  {new Date(year.startDate).toLocaleDateString()}
+                  {formatDate(year.startDate)}
                 </span>
               </div>
               <div className="flex items-center text-sm">
                 <span className="text-gray-600 w-20">End:</span>
                 <span className="text-gray-900 font-medium">
-                  {new Date(year.endDate).toLocaleDateString()}
+                  {formatDate(year.endDate)}
                 </span>
               </div>
               <div className="flex items-center text-sm">

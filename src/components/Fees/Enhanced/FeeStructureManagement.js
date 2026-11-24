@@ -1,3 +1,4 @@
+import { formatDate } from "../../../utils/formatDate";
 import React, { useState } from "react";
 import {
   Calendar,
@@ -176,8 +177,8 @@ const FeeStructureManagement = () => {
               </span>
             </div>
             <span className="text-sm text-green-700">
-              {new Date(activeYear.startDate).toLocaleDateString()} -{" "}
-              {new Date(activeYear.endDate).toLocaleDateString()}
+              {formatDate(activeYear.startDate)} -{" "}
+              {formatDate(activeYear.endDate)}
             </span>
           </div>
         </div>
@@ -493,8 +494,8 @@ const FeeStructureManagement = () => {
                                 )}
                               </div>
                               <div className="text-sm text-gray-500 dark:text-gray-400">
-                                {new Date(year.startDate).toLocaleDateString()}{" "}
-                                - {new Date(year.endDate).toLocaleDateString()}
+                                {formatDate(year.startDate)}{" "}
+                                - {formatDate(year.endDate)}
                               </div>
                             </div>
                           </div>

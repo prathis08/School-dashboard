@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/formatDate";
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Icons from "../../utils/icons";
@@ -188,12 +189,6 @@ const Students = () => {
     }
   };
 
-  const getGPAColor = (gpa) => {
-    if (gpa >= 3.7) return "text-green-600";
-    if (gpa >= 3.0) return "text-yellow-600";
-    return "text-red-600";
-  };
-
   const getInitials = (name) => {
     return name
       .split(" ")
@@ -300,7 +295,7 @@ const Students = () => {
 
         <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
           <Icons.Calendar className="w-4 h-4 mr-2" />
-          Admitted {new Date(student.admissionDate).toLocaleDateString()}
+          Admitted {formatDate(student.admissionDate)}
         </div>
       </div>
     </div>
@@ -434,13 +429,14 @@ const Students = () => {
             <div className="flex items-center space-x-2">
               <Icons.Filter className="w-5 h-5 text-gray-400 dark:text-gray-500" />
               <select
+                aria-label="Filter by grade"
                 value={filterGrade}
                 onChange={(e) => setFilterGrade(e.target.value)}
                 className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 {grades.map((grade) => (
                   <option key={grade} value={grade}>
-                    {grade}
+                    {grade === "All" ? "All grades" : grade}
                   </option>
                 ))}
               </select>
@@ -449,13 +445,14 @@ const Students = () => {
             {/* Status Filter */}
             <div>
               <select
+                aria-label="Filter by status"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 {statuses.map((status) => (
                   <option key={status} value={status}>
-                    {status}
+                    {status === "All" ? "All statuses" : status}
                   </option>
                 ))}
               </select>

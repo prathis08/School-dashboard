@@ -1,3 +1,4 @@
+import { formatDate } from "../../../utils/formatDate";
 import React, { useState, useEffect } from "react";
 import {
   User,
@@ -321,7 +322,7 @@ const StudentIndividualFees = () => {
                       ₹{parseFloat(fee.amount).toFixed(2)}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                      {new Date(fee.dueDate).toLocaleDateString()}
+                      {formatDate(fee.dueDate)}
                     </td>
                     <td className="px-4 py-3">
                       <span

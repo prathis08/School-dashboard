@@ -28,7 +28,7 @@ const Promotions = () => {
 
   const { data: yearsResp, isLoading: yearsLoading } = useEnhancedAcademicYears();
   const { data: gradesResp, isLoading: gradesLoading } = useGradesOptions();
-  const { data: classesResp } = useClasses();
+  const { data: classesResp, isLoading: classesLoading } = useClasses();
 
   const years = useMemo(() => asList(yearsResp), [yearsResp]);
   const grades = useMemo(() => asList(gradesResp), [gradesResp]);
@@ -48,10 +48,14 @@ const Promotions = () => {
   }, [years, academicYearId]);
 
   useEffect(() => {
-    if (!gradeId && grades.length) {
-      setGradeId(grades[0].gradeId || grades[0].id || grades[0].grade);
-    }
-  }, [grades, gradeId]);
+    if (gradeId || grades.length === 0 || classesLoading) return;
+    // Prefer a grade that actually has classes so the preview has data.
+    const classWithGrade = classes.find((cls) => cls.gradeId || cls.grade_id);
+    const preferred = classWithGrade?.gradeId || classWithGrade?.grade_id;
+    setGradeId(
+      preferred || grades[0].gradeId || grades[0].id || grades[0].grade,
+    );
+  }, [grades, classes, classesLoading, gradeId]);
 
   const filteredClasses = useMemo(
     () =>
@@ -74,13 +78,23 @@ const Promotions = () => {
   const students = preview?.students || [];
   const counts = preview?.counts;
 
+  const gradeLabel = useMemo(() => {
+    if (!preview) return "";
+    const raw = preview.grade;
+    if (raw && !String(raw).startsWith("GRADE_")) return raw;
+    const match = grades.find(
+      (g) => (g.gradeId || g.id || g.grade) === preview.gradeId,
+    );
+    return match?.grade || raw || preview.gradeId || "";
+  }, [preview, grades]);
+
   const suggestedTarget =
     preview?.suggestedTargetYear?.academicYearId || "";
 
   const handleRun = async () => {
     const ok = await confirm({
       title: "Run promotion?",
-      message: `This will process ${students.length} student(s) in ${preview?.grade || ""} for ${preview?.academicYear?.name || ""}. This writes next-year enrollments and moves students' current class.`,
+      message: `This will process ${students.length} student(s) in ${gradeLabel} for ${preview?.academicYear?.name || ""}. This writes next-year enrollments and moves students' current class.`,
       confirmLabel: "Run promotion",
       tone: "danger",
     });
@@ -228,7 +242,7 @@ const Promotions = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div className="text-sm text-gray-600 dark:text-gray-300">
               <span className="font-semibold text-gray-900 dark:text-white">
-                {preview.grade}
+                {gradeLabel}
               </span>{" "}
               · {preview.academicYear?.name}
               {preview.isTopGrade ? (

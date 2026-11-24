@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/formatDate";
 import React, { useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Icons from "../../utils/icons";
@@ -126,7 +127,7 @@ const SubjectDetail = () => {
                 Created
               </label>
               <p className="text-gray-900 dark:text-white">
-                {new Date(subject.createdAt).toLocaleDateString()}
+                {formatDate(subject.createdAt)}
               </p>
             </div>
           </div>
@@ -242,9 +243,7 @@ const SubjectDetail = () => {
                 </p>
                 <p className="text-gray-600 dark:text-gray-400">
                   <span className="font-medium">Assigned:</span>{" "}
-                  {new Date(
-                    teacher.teacher_subject?.createdAt,
-                  ).toLocaleDateString()}
+                  {formatDate(teacher.teacher_subject?.createdAt)}
                 </p>
               </div>
             </div>

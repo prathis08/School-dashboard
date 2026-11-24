@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/formatDate";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Icons from "../../utils/icons";
@@ -314,7 +315,7 @@ const Subjects = () => {
       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <div className="flex justify-between items-center">
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            Created: {new Date(subject.createdAt).toLocaleDateString()}
+            Created: {formatDate(subject.createdAt)}
           </div>
           <div className="flex space-x-2">
             <button

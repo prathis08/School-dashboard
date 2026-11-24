@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/formatDate";
 import React, { useState, useEffect } from "react";
 import {
   User,
@@ -354,7 +355,7 @@ const Profile = () => {
               <Calendar className="w-5 h-5 text-gray-400 mr-3" />
               <span>
                 {tempData.dateOfBirth
-                  ? new Date(tempData.dateOfBirth).toLocaleDateString()
+                  ? formatDate(tempData.dateOfBirth)
                   : "Not provided"}
               </span>
             </div>
@@ -595,7 +596,7 @@ const Profile = () => {
               <Calendar className="w-5 h-5 text-gray-400 mr-3" />
               <span>
                 {tempData.joiningDate
-                  ? new Date(tempData.joiningDate).toLocaleDateString()
+                  ? formatDate(tempData.joiningDate)
                   : "Not specified"}
               </span>
             </div>

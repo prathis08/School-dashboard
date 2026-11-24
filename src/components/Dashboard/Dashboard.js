@@ -202,7 +202,7 @@ const TaskDetailPopup = ({
                 Created
               </label>
               <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
-                {new Date(selectedTask.createdAt).toLocaleDateString("en-US", {
+                {new Date(selectedTask.createdAt).toLocaleDateString("en-IN", {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
@@ -241,29 +241,26 @@ const Dashboard = () => {
     isLoading: statsLoading,
     error: statsError,
   } = useDashboardStats();
-  const {
-    data: recentActivityData,
-    isLoading: activityLoading,
-    error: activityError,
-  } = useRecentActivity();
-  const {
-    data: attendanceData,
-    isLoading: attendanceLoading,
-    error: attendanceError,
-  } = useAttendanceOverview();
-  const {
-    data: performanceChartData,
-    isLoading: performanceLoading,
-    error: performanceError,
-  } = usePerformanceData();
+  const { data: recentActivityData, isLoading: activityLoading } =
+    useRecentActivity();
+  const { data: attendanceData, isLoading: attendanceLoading } =
+    useAttendanceOverview();
+  const { data: performanceChartData, isLoading: performanceLoading } =
+    usePerformanceData();
 
   // Check if any data is loading
   const loading =
     statsLoading || activityLoading || attendanceLoading || performanceLoading;
 
-  // Check for any errors
-  const error =
-    statsError || activityError || attendanceError || performanceError;
+  // Only the stats query is required; optional widgets render empty states.
+  const error = statsError;
+  const recentActivities = recentActivityData?.data ?? [];
+  const performanceSeries = performanceChartData?.data ?? [];
+  const attendanceOverview = attendanceData?.data;
+  const attendancePercent =
+    attendanceOverview && attendanceOverview.total > 0
+      ? attendanceOverview.percentage
+      : 0;
 
   const [stats, setStats] = useState({
     totalClasses: 0,
@@ -465,7 +462,7 @@ const Dashboard = () => {
   const formatTaskDate = (date, time) => {
     if (!date) return "";
     const dateObj = new Date(date);
-    const formattedDate = dateObj.toLocaleDateString("en-US", {
+    const formattedDate = dateObj.toLocaleDateString("en-IN", {
       month: "short",
       day: "numeric",
     });
@@ -492,7 +489,7 @@ const Dashboard = () => {
             {typeof value === "number" ? value.toLocaleString() : value}
             {suffix}
           </p>
-          {growth && (
+          {Boolean(growth) && (
             <div className="flex items-center mt-2">
               {growth > 0 ? (
                 <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
@@ -545,13 +542,13 @@ const Dashboard = () => {
               stroke="#3b82f6"
               strokeWidth="8"
               fill="none"
-              strokeDasharray={`${stats.studentAttendance * 2.51} 251`}
+              strokeDasharray={`${attendancePercent * 2.51} 251`}
               strokeLinecap="round"
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-2xl font-bold text-gray-900 dark:text-white">
-              {stats.studentAttendance}%
+              {attendancePercent}%
             </span>
           </div>
         </div>
@@ -586,8 +583,8 @@ const Dashboard = () => {
         </select>
       </div>
       <div className="space-y-4">
-        {performanceChartData && performanceChartData.length > 0 ? (
-          performanceChartData.map((item, index) => (
+        {performanceSeries.length > 0 ? (
+          performanceSeries.map((item, index) => (
             <div key={index} className="flex items-center justify-between">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 {item.class}
@@ -697,8 +694,8 @@ const Dashboard = () => {
         </button>
       </div>
       <div className="space-y-4">
-        {recentActivityData && recentActivityData.length > 0 ? (
-          recentActivityData.map((activity) => {
+        {recentActivities.length > 0 ? (
+          recentActivities.map((activity) => {
             const Icon = activity.icon;
             return (
               <div key={activity.id} className="flex items-start">
@@ -741,9 +738,9 @@ const Dashboard = () => {
       </div>
       <div className="space-y-4">
         {agenda.length > 0 ? (
-          agenda.map((item) => (
+          agenda.map((item, index) => (
             <div
-              key={item.id}
+              key={item.id || `agenda-${index}`}
               className="p-4 bg-yellow-50 rounded-lg border border-yellow-200"
             >
               <div className="flex items-start justify-between">
@@ -784,8 +781,8 @@ const Dashboard = () => {
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          <button className="btn-secondary">Export</button>
-          <button className="btn-primary">Add New</button>
+          <button className="btn-secondary whitespace-nowrap">Export</button>
+          <button className="btn-primary whitespace-nowrap">Add New</button>
         </div>
       </div>
 

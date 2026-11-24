@@ -257,6 +257,21 @@ const Layout = ({ children }) => {
         (sub.path !== "/" && location.pathname.startsWith(`${sub.path}/`)),
     );
 
+  // Auto-open the dropdown that contains the current route.
+  useEffect(() => {
+    const activeParent = menuItems.find(
+      (item) =>
+        item.isDropdown &&
+        item.subItems?.some(
+          (sub) =>
+            location.pathname === sub.path ||
+            (sub.path !== "/" &&
+              location.pathname.startsWith(`${sub.path}/`)),
+        ),
+    );
+    if (activeParent) setOpenDropdown(activeParent.id);
+  }, [location.pathname, menuItems]);
+
   // Get user data from profile API or fallback to localStorage
   const getUserInfo = () => {
     if (profileData?.data?.user) {

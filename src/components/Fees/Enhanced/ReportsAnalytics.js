@@ -1,3 +1,4 @@
+import { formatDate } from "../../../utils/formatDate";
 import React, { useState } from "react";
 import {
   BarChart3,
@@ -267,7 +268,7 @@ const ReportsAnalytics = ({ isDashboard = false }) => {
                         {item.installmentName}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
-                        {new Date(item.dueDate).toLocaleDateString()}
+                        {formatDate(item.dueDate)}
                       </td>
                       <td className="px-4 py-3 text-sm font-semibold text-red-600">
                         ₹{item.balanceAmount?.toLocaleString()}

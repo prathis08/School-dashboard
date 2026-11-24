@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Icons } from "../../utils/icons";
 import { useTeacher } from "../../hooks/useApiHooks";
+import { formatDate } from "../../utils/formatDate";
 
 const TeacherDetail = () => {
   const { id } = useParams();
@@ -72,12 +73,6 @@ const TeacherDetail = () => {
       currency: "INR",
       maximumFractionDigits: 0,
     }).format(value);
-  };
-
-  const formatDate = (value) => {
-    if (!value) return "N/A";
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? "N/A" : date.toLocaleDateString();
   };
 
   const tabs = [

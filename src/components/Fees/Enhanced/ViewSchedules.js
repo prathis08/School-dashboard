@@ -1,3 +1,4 @@
+import { formatDate } from "../../../utils/formatDate";
 import React, { useState } from "react";
 import {
   Calendar,
@@ -167,9 +168,7 @@ const ViewSchedules = () => {
                           <div className="text-sm text-gray-600">
                             <p className="mb-2">
                               <span className="font-medium">Due Date:</span>{" "}
-                              {new Date(
-                                installment.dueDate,
-                              ).toLocaleDateString()}
+                              {formatDate(installment.dueDate)}
                             </p>
                             {installment.feeMappings &&
                               installment.feeMappings.length > 0 && (

@@ -1,3 +1,4 @@
+import { formatDate } from "../../../utils/formatDate";
 import React, { useState, useMemo } from "react";
 import {
   IndianRupee,
@@ -322,9 +323,7 @@ const ViewFeeStructure = ({ onEdit }) => {
                                     </div>
                                     <div className="text-sm text-gray-600 dark:text-gray-300 mb-3">
                                       Due:{" "}
-                                      {new Date(
-                                        installment.dueDate,
-                                      ).toLocaleDateString()}
+                                      {formatDate(installment.dueDate)}
                                     </div>
                                     {installment.feeMappings &&
                                       installment.feeMappings.length > 0 && (

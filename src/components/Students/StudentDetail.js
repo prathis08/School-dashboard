@@ -2,6 +2,7 @@ import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Icons from "../../utils/icons";
 import { useStudent, useStudentEnrollments } from "../../hooks/useApiHooks";
+import { formatDate } from "../../utils/formatDate";
 
 const StudentDetail = () => {
   const { id } = useParams();
@@ -120,14 +121,6 @@ const StudentDetail = () => {
       .toUpperCase();
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
   const InfoCard = ({ title, children, icon: Icon }) => (
     <div className="card">
       <div className="flex items-center mb-4">
@@ -224,7 +217,7 @@ const StudentDetail = () => {
                 </span>
                 <span
                   className={`px-3 py-1 text-sm font-medium rounded-full ${getGradeColor(
-                    student.grade,
+                    student.class?.grade || student.grade,
                   )}`}
                 >
                   {student.class?.className || "N/A"}
@@ -271,7 +264,9 @@ const StudentDetail = () => {
             icon={Icons.Calendar}
           />
           <InfoItem label="Gender" value={student.gender} icon={Icons.User} />
-          <InfoItem label="Email" value={student.email} icon={Icons.Mail} />
+          <div className="md:col-span-2">
+            <InfoItem label="Email" value={student.email} icon={Icons.Mail} />
+          </div>
           <InfoItem label="Phone" value={student.phone} icon={Icons.Phone} />
           <div className="md:col-span-2">
             <InfoItem
@@ -286,7 +281,9 @@ const StudentDetail = () => {
         <InfoCard title="Academic Information" icon={Icons.GraduationCap}>
           <InfoItem
             label="Grade"
-            value={student.grade}
+            value={
+              student.class?.grade || student.grade || "Not provided"
+            }
             icon={Icons.GraduationCap}
           />
           <InfoItem
